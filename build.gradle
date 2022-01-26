@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+
+
+    maven {
+        url "https://mvnrepository.com/artifact/org.apache.hive/hive-metastore"
+    }
+
+    maven {
+        url 'https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients'
+    }
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+    implementation "org.odpi.egeria:repository-services-apis:3.4"
+    implementation "org.odpi.egeria:audit-log-framework:3.4"
+    implementation "org.odpi.egeria:open-connector-framework:3.4"
+    implementation "org.odpi.egeria:connector-configuration-factory:3.4"
+
+
+
+}
+
+test {
+    useJUnitPlatform()
+}
