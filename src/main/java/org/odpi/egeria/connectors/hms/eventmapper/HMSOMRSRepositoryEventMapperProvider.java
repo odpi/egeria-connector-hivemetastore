@@ -32,9 +32,15 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
     static final String METADATA_STORE_USER = "MetadataStoreUserId";
     static final String METADATA_STORE_PASSWORD = "MetadataStorePassword";
 
-    static final String THRIFT_URL = "ThriftURL";
+    static final String USE_SSL = "useSSL";
 
     static final String SEND_POLL_EVENTS = "sendPollEvents";
+
+    /**
+     * If this is set then we use this as the root of the endpoint address
+     * If it is not set then, no connection is associated with the asset
+     */
+    static final String ENDPOINT_ADDRESS_PREFIX = "EndpointAddressPrefix";
 
     /**
      * Constructor used to initialize the ConnectorProviderBase with the Java class name of the specific
@@ -53,7 +59,15 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
 
         List<String> knownConfigProperties = new ArrayList<>();
         knownConfigProperties.add(QUALIFIED_NAME_PREFIX);
+        knownConfigProperties.add(ENDPOINT_ADDRESS_PREFIX);
         knownConfigProperties.add(REFRESH_TIME_INTERVAL);
+        knownConfigProperties.add(DATABASE_NAME);
+        knownConfigProperties.add(CATALOG_NAME);
+        knownConfigProperties.add(SEND_POLL_EVENTS);
+        knownConfigProperties.add(METADATA_STORE_USER);
+        knownConfigProperties.add(METADATA_STORE_PASSWORD);
+        knownConfigProperties.add(USE_SSL);
+
         connectorType.setRecognizedConfigurationProperties(knownConfigProperties);
 
         super.setConnectorTypeProperties(connectorType);

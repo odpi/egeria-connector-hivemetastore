@@ -34,7 +34,7 @@ import java.util.List;
  * HMSOMRSRepositoryEventMapper supports the event mapper function for a Hive metastore
  * when used as an open metadata repository.
  *
- * This class is an implmentation of an OMRS event mapper, it polls for content in Hive metastore and puts
+ * This class is an implementation of an OMRS event mapper, it polls for content in Hive metastore and puts
  * that content into an embedded Egeria repository. It then (if configured to send batch events) extracts the content
  * from the embedded repository and sends as batched events.
  *
@@ -129,10 +129,12 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
     private String dbName = "default";
     private String metadata_store_userId = null;
     private String metadata_store_password = null;
-    private String thrift_url= "thrift://localhost:9083";
 
     private boolean sendPollEvents = false;
 
+    private boolean useSSL = false;
+
+    private String  configuredEndpointAddress = null;
 
     private PollingThread pollingThread;
     private String databaseGUID;
@@ -153,12 +155,14 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             raiseRepositoryErrorException(HMSOMRSErrorCode.ENDPOINT_NOT_SUPPLIED_IN_CONFIG, methodName, null, "null");
         } else {
             Configuration conf = new Configuration();
-
-            conf.set("metastore.thrift.uris", thrift_url);
-            conf.set("metastore.use.SSL", "true");
-            conf.set("metastore.truststore.path", "file:///" + System.getProperty("java.home") + "/lib/security/cacerts");
-            conf.set("metastore.truststore.password", "changeit");
-            conf.set("metastore.client.auth.mode", "PLAIN");
+            // we only support one thrift uri at this time
+            conf.set("metastore.thrift.uris", endpointProperties.getAddress());
+            if (useSSL) {
+                conf.set("metastore.use.SSL", "true");
+                conf.set("metastore.truststore.path", "file:///" + System.getProperty("java.home") + "/lib/security/cacerts");
+                conf.set("metastore.truststore.password", "changeit");
+                conf.set("metastore.client.auth.mode", "PLAIN");
+            }
             conf.set("metastore.client.plain.username", metadata_store_userId);
             conf.set("metastore.client.plain.password", metadata_store_password);
 
@@ -228,14 +232,19 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             if (configuredMetadataStorePassword != null) {
                 metadata_store_password = configuredMetadataStorePassword;
             }
-            String configuredThriftURL = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.THRIFT_URL);
-            if (configuredMetadataStorePassword != null) {
-               thrift_url = configuredThriftURL;
-            }
+//            String configuredThriftURL = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.THRIFT_URL);
+//            if (configuredMetadataStorePassword != null) {
+//               thrift_url = configuredThriftURL;
+//            }
             String configuredSendPollEvents = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS);
             if (configuredSendPollEvents != null) {
                sendPollEvents = true;
             }
+            String configuredSUseSSL = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.USE_SSL);
+            if (configuredSUseSSL != null) {
+                useSSL = true;
+            }
+            configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS_PREFIX);
 
         }
 
