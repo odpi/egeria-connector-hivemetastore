@@ -96,8 +96,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
     private String repositoryName = null;
 
-    private String folderLocation;
-
     final List<String> supportedTypeNames = Arrays.asList(new String[]{
             // entity types
             "Asset", // super type of Database
@@ -146,7 +144,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         super();
 //        this.sourceName = "HMSOMRSRepositoryEventMapper";
     }
-
 
     private HiveMetaStoreClient connectToHMS() throws TException,RepositoryErrorException {
         String methodName = "connectToHMS";
@@ -340,11 +337,11 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             List<EntityDetail> entityList = new ArrayList<>();
             entityList.add(databaseEntity);
 
-            List<String> connectionGuids = populateEvent(CONNECTION_TO_ASSET, databaseGUID, entityList, relationshipList);
+            List<String> connectionGuids = updateRelationshipList(CONNECTION_TO_ASSET, databaseGUID, entityList, relationshipList);
             if (connectionGuids != null && connectionGuids.size() > 0) {
                 for (String connectionGUID : connectionGuids) {
-                    populateEvent(CONNECTION_CONNECTOR_TYPE, connectionGUID, entityList, relationshipList);
-                    populateEvent(CONNECTION_ENDPOINT, connectionGUID, entityList, relationshipList);
+                    updateRelationshipList(CONNECTION_CONNECTOR_TYPE, connectionGUID, entityList, relationshipList);
+                    updateRelationshipList(CONNECTION_ENDPOINT, connectionGUID, entityList, relationshipList);
                 }
             }
              // add in the other entities and relationships
@@ -365,8 +362,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
         }
 
-        private List<String> populateEvent(String relationshipTypeName, String startEntityGUID, List<EntityDetail> entityList, List<Relationship> relationshipList) throws ConnectorCheckedException {
-            String methodName = "populateEvent";
+        private List<String> updateRelationshipList(String relationshipTypeName, String startEntityGUID, List<EntityDetail> entityList, List<Relationship> relationshipList) throws ConnectorCheckedException {
+            String methodName = "updateRelationshipList";
 
             List<String> otherEndGuids = new ArrayList<>();
             TypeDefSummary typeDefSummary = repositoryHelper.getTypeDefByName(methodName, relationshipTypeName);

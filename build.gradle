@@ -74,13 +74,13 @@ dependencies {
     implementation "org.odpi.egeria:admin-services-api:${egeriaversion}"
     implementation "org.odpi.egeria:audit-log-framework:${egeriaversion}"
     // Hive
-    implementation 'org.apache.thrift:libthrift:0.9.3'
-    implementation 'org.apache.thrift:libfb303:0.9.3'
-    implementation "org.apache.hive:hive-common:3.1.2"
+//    implementation 'org.apache.thrift:libthrift:0.9.3'
+//    implementation 'org.apache.thrift:libfb303:0.9.3'
+//    implementation "org.apache.hive:hive-common:3.1.2"
     implementation "org.apache.hadoop:hadoop-common:3.3.3"
     // local patched HMS Client - including patched log4j
-   // implementation(files('libs/hive-metastore-standalone-client-3.1.2-sqlquery.jar'))
-    implementation 'org.apache.hive:hive-standalone-metastore:3.1.3'
+    implementation(files('libs/hive-metastore-standalone-client-3.1.2-sqlquery.jar'))
+//    implementation 'org.apache.hive:hive-standalone-metastore:3.1.3'
     // Only needed to compile test code
     testCompileOnly "org.junit.jupiter:junit-jupiter-api:${jupiterVersion}"
     testImplementation "org.odpi.egeria:topic-integrator-api:${egeriaversion}"
