@@ -260,28 +260,28 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             }
         }
 
-        private List<EntityDetail> getEntitiesByType(String typeName) throws ConnectorCheckedException {
-            String methodName = "getEntitiesByType(String typeName)";
-            List<EntityDetail> entityDetails = null;
-            try {
-                entityDetails = getEntitiesByTypeGuid(typeName);
-            } catch (InvalidParameterException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-            } catch (RepositoryErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.REPOSITORY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-            } catch (TypeErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-            } catch (PropertyErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.PROPERTY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-            } catch (PagingErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.PAGING_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-            } catch (FunctionNotSupportedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.FUNCTION_NOT_SUPPORTED_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-            } catch (UserNotAuthorizedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.USER_NOT_AUTHORIZED_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-            }
-            return entityDetails;
-        }
+//        private List<EntityDetail> getEntitiesByType(String typeName) throws ConnectorCheckedException {
+//            String methodName = "getEntitiesByType(String typeName)";
+//            List<EntityDetail> entityDetails = null;
+//            try {
+//                entityDetails = getEntitiesByTypeGuid(typeName);
+//            } catch (InvalidParameterException e) {
+//                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, e, repositoryConnector.getServerName());
+//            } catch (RepositoryErrorException e) {
+//                raiseConnectorCheckedException(HMSOMRSErrorCode.REPOSITORY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
+//            } catch (TypeErrorException e) {
+//                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
+//            } catch (PropertyErrorException e) {
+//                raiseConnectorCheckedException(HMSOMRSErrorCode.PROPERTY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
+//            } catch (PagingErrorException e) {
+//                raiseConnectorCheckedException(HMSOMRSErrorCode.PAGING_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
+//            } catch (FunctionNotSupportedException e) {
+//                raiseConnectorCheckedException(HMSOMRSErrorCode.FUNCTION_NOT_SUPPORTED_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
+//            } catch (UserNotAuthorizedException e) {
+//                raiseConnectorCheckedException(HMSOMRSErrorCode.USER_NOT_AUTHORIZED_EXCEPTION, methodName, e, repositoryConnector.getServerName());
+//            }
+//            return entityDetails;
+//        }
 
         private List<Relationship> getRelationshipsForEntityHelper(
                 String entityGUID,
