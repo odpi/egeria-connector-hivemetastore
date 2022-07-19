@@ -2,13 +2,31 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright Contributors to the ODPi Egeria project.
  */
+buildscript {
+    repositories {
+        mavenCentral()
+        }
+    //dependencies {
+    //    classpath 'ru.tinkoff.gradle:jarjar:1.1.0'
+    //}
+}
 
 plugins {
     id 'java-library'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id 'idea'
     id 'maven-publish'
+    // Checks for unnecessary dependencies
+    id 'com.autonomousapps.dependency-analysis' version "1.10.0"
+    // helps resolve log implementation clashes
+    id 'dev.jacomet.logging-capabilities' version "0.10.0"
+    // This plugin helps resolve jakarta/javax dev.jacomet.logging-capabilities
+    id 'de.jjohannes.java-ecosystem-capabilities' version "0.4"
+    //id 'ru.tinkoff.gradle.jarjar' version "1.1.0"
 }
+
+//apply plugin: 'ru.tinkoff.gradle.jarjar'
+
 
 if (System.getenv("CI")) {
     apply plugin: 'signing'
@@ -24,15 +42,20 @@ repositories {
 configurations.all {
     // check for updates every build
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+    exclude group: 'ch.qos.reload4j', module: 'reload4j'
+    exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
 }
-configurations.all {
+//configurations.all {
 //    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    exclude group: 'org.slf4j'
+//    exclude group: 'org.slf4j'
 
 
 //    exclude group:'org.apache.logging.log4j', module: 'log4j'
 //    exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
-}
+//}
 
 group = 'org.odpi.egeria'
 version = '1.0-SNAPSHOT'
@@ -40,7 +63,7 @@ ext.name = 'New Egeria code'
 description = 'New code for Egeria'
 
 ext {
-    egeriaversion = '3.8'
+    egeriaversion = '3.10'
     slf4jVersion = '1.7.36'
     jacksonVersion = '2.13.2'
     jupiterVersion = '5.8.2'
@@ -49,31 +72,40 @@ ext {
     hiveversion = '3.1.3'
 }
 
+repositories {
+    mavenCentral()
+    maven {
+        url "https://maven.atlassian.com/3rdparty"
+    }
+}
+
 // For a single module, add here. For multiple modules, refactor and use constraints (see main egeria build.gradle for an example)
 dependencies {
+    // authoritative versions for dependencyManagement provided by egeria core
+    implementation enforcedPlatform("org.odpi.egeria:egeria:${egeriaversion}")
+
 
     // Only used for build - already present in server chassis at runtime - similar to 'provided' with maven
     compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
 
-    // Needed for build and run
-    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    // Not currently being used
+    //implementation "org.slf4j:slf4j-api:${slf4jVersion}"
 
-
-    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    implementation "org.springframework:spring-core:${springwebVersion}"
-    implementation "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
-    implementation "org.odpi.egeria:open-connector-framework:${egeriaversion}"
-    implementation "org.odpi.egeria:open-metadata-types:${egeriaversion}"
-    implementation "org.odpi.egeria:audit-log-framework:${egeriaversion}"
-    implementation "org.odpi.egeria:repository-services:${egeriaversion}"
-    implementation "org.odpi.egeria:repository-services-implementation:${egeriaversion}"
-    implementation "org.odpi.egeria:admin-services-api:${egeriaversion}"
-    implementation "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
-    implementation "org.odpi.egeria:repository-services-apis:${egeriaversion}"
-    implementation "org.odpi.egeria:admin-services-api:${egeriaversion}"
-    implementation "org.odpi.egeria:audit-log-framework:${egeriaversion}"
+    // Standard egeria stack
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compileOnly "org.springframework:spring-core:${springwebVersion}"
+    compileOnly "org.odpi.egeria:open-connector-framework:${egeriaversion}"
+    compileOnly "org.odpi.egeria:open-metadata-types:${egeriaversion}"
+    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
+    compileOnly "org.odpi.egeria:repository-services:${egeriaversion}"
+    compileOnly "org.odpi.egeria:repository-services-implementation:${egeriaversion}"
+    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
+    compileOnly "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
+    compileOnly "org.odpi.egeria:repository-services-apis:${egeriaversion}"
+    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
+    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
     // Hive
 //    implementation 'org.apache.thrift:libthrift:0.9.3'
 //    implementation 'org.apache.thrift:libfb303:0.9.3'
@@ -82,9 +114,17 @@ dependencies {
     // local patched HMS Client - including patched log4j
     implementation(files('libs/hive-metastore-standalone-client-3.1.2-sqlquery.jar'))
 //    implementation 'org.apache.hive:hive-standalone-metastore:3.1.3'
+
+    //implementation jarJar.repackage {
+    //    from files('libs/hive-metastore-standalone-client-3.1.2-sqlquery.jar')
+    //    archiveExclude "com/google/protobuf/**"
+    //}
+
     // Only needed to compile test code
+    testCompileOnly "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
     testCompileOnly "org.junit.jupiter:junit-jupiter-api:${jupiterVersion}"
-    testImplementation "org.odpi.egeria:topic-integrator-api:${egeriaversion}"
+    // not currently used
+    //testImplementation "org.odpi.egeria:topic-integrator-api:${egeriaversion}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}"
 
 }
@@ -135,10 +175,14 @@ shadowJar {
     archiveClassifier = 'jar-with-dependencies'
     // required as this hits a jar limit otherwise
     zip64 true
+    minimize {
+        exclude("com/google/protobuf/**")
+    }
 }
 
 // We want to built a jar with dependencies in a normal build, so to avoid specifying task explicitly
 build.dependsOn shadowJar
+build.dependsOn("buildHealth")
 
 // We only have a single artifact for now - this additional metadata is
 // required for publishing to maven central. Only doing signing in 'CI'
@@ -215,3 +259,14 @@ if (System.getenv("CI")) {
         useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     }
 }
+
+// Configure Auto Relocation
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+
+task relocateShadowJar(type: ConfigureShadowRelocation) {
+    target = tasks.shadowJar
+    prefix = "myapp" // Default value is "shadow"
+
+}
+
+tasks.shadowJar.dependsOn tasks.relocateShadowJar
