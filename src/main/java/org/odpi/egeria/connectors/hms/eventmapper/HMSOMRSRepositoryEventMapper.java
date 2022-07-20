@@ -4,6 +4,7 @@ package org.odpi.egeria.connectors.hms.eventmapper;
 
 
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
@@ -57,7 +58,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
     private static final String  DEPLOYED_DATABASE_SCHEMA = "DeployedDatabaseSchema";
     private static final String  RELATIONAL_DB_SCHEMA_TYPE = "RelationalDBSchemaType";
     // relationship
-    private static final String  DATA_CONTENT_FOR_DATASET = "DeployedDatabaseSchema";
+    private static final String  DATA_CONTENT_FOR_DATASET = "DataContentForDataSet";
     // relationship
     private static final String ASSET_SCHEMA_TYPE =  "AssetSchemaType";
     //relationship
@@ -154,6 +155,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         if (endpointProperties == null) {
             raiseRepositoryErrorException(HMSOMRSErrorCode.ENDPOINT_NOT_SUPPLIED_IN_CONFIG, methodName, null, "null");
         } else {
+            // populate the Hive configuration for the HMS client.
             Configuration conf = new Configuration();
             // we only support one thrift uri at this time
             conf.set("metastore.thrift.uris", endpointProperties.getAddress());
@@ -194,13 +196,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         }
 
         this.repositoryHelper = this.repositoryConnector.getRepositoryHelper();
-        if (metadataCollection == null) {
-            try {
-                connectToHMS();
-            } catch (RepositoryErrorException | TException cause) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
-            }
-        }
+
         Map<String, Object> configurationProperties = connectionProperties.getConfigurationProperties();
         this.userId = connectionProperties.getUserId();
         if (this.userId == null) {
@@ -208,48 +204,63 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             this.userId = "OMAGServer";
         }
         if (configurationProperties != null) {
-            Integer configuredRefreshInterval = (Integer) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.REFRESH_TIME_INTERVAL);
-            if (configuredRefreshInterval != null) {
-                refreshInterval = configuredRefreshInterval * 1000;
-            }
-            String configuredQualifiedNamePrefix = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX);
-            if (configuredQualifiedNamePrefix != null) {
-                qualifiedNamePrefix = configuredQualifiedNamePrefix;
-            }
-            String configuredCatName = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME);
-            if (configuredCatName != null) {
-                catName = configuredCatName;
-            }
-            String configuredDBName = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME);
-            if (configuredDBName != null) {
-                dbName = configuredDBName;
-            }
-            String configuredMetadataStoreUserId = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER);
-            if (configuredMetadataStoreUserId != null) {
-                metadata_store_userId = configuredMetadataStoreUserId;
-            }
-            String configuredMetadataStorePassword = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_PASSWORD);
-            if (configuredMetadataStorePassword != null) {
-                metadata_store_password = configuredMetadataStorePassword;
-            }
-//            String configuredThriftURL = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.THRIFT_URL);
-//            if (configuredMetadataStorePassword != null) {
-//               thrift_url = configuredThriftURL;
-//            }
-            String configuredSendPollEvents = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS);
-            if (configuredSendPollEvents != null) {
-               sendPollEvents = true;
-            }
-            String configuredSUseSSL = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.USE_SSL);
-            if (configuredSUseSSL != null) {
-                useSSL = true;
-            }
-            configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS_PREFIX);
+            extractConfigurationProperties(configurationProperties);
 
+        }
+        if (metadataCollection == null) {
+            try {
+                connectToHMS();
+            } catch (RepositoryErrorException | TException cause) {
+                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+            }
         }
 
         this.pollingThread = new PollingThread();
         pollingThread.start();
+    }
+
+    /**
+     * Extract Egeria configuration properties into instance variables
+     * @param configurationProperties map of Egeria configuration variables.
+     */
+    private void extractConfigurationProperties(Map<String, Object> configurationProperties) {
+        Integer configuredRefreshInterval = (Integer) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.REFRESH_TIME_INTERVAL);
+        if (configuredRefreshInterval != null) {
+            refreshInterval = configuredRefreshInterval * 1000;
+        }
+        String configuredQualifiedNamePrefix = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX);
+        if (configuredQualifiedNamePrefix != null) {
+            qualifiedNamePrefix = configuredQualifiedNamePrefix;
+        }
+        String configuredCatName = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME);
+        if (configuredCatName != null) {
+            catName = configuredCatName;
+        }
+        String configuredDBName = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME);
+        if (configuredDBName != null) {
+            dbName = configuredDBName;
+        }
+        String configuredMetadataStoreUserId = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER);
+        if (configuredMetadataStoreUserId != null) {
+            metadata_store_userId = configuredMetadataStoreUserId;
+        }
+        String configuredMetadataStorePassword = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_PASSWORD);
+        if (configuredMetadataStorePassword != null) {
+            metadata_store_password = configuredMetadataStorePassword;
+        }
+//            String configuredThriftURL = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.THRIFT_URL);
+//            if (configuredMetadataStorePassword != null) {
+//               thrift_url = configuredThriftURL;
+//            }
+        Boolean configuredSendPollEvents = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS);
+        if (configuredSendPollEvents != null) {
+           sendPollEvents = configuredSendPollEvents;
+        }
+        Boolean configuredSUseSSL = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.USE_SSL);
+        if (configuredSUseSSL != null) {
+            useSSL = configuredSUseSSL;
+        }
+        configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS_PREFIX);
     }
 
 
@@ -524,20 +535,20 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                                               baseCanonicalName+"_schemaType",
                                                                               null,
                                                                               false);
-                issueSaveEntityReferenceCopy(deployedDatabaseSchemaEntity);
+                issueSaveEntityReferenceCopy(relationalDBTypeEntity);
 
                 // create Relationships
                 String databaseGuid = databaseEntity.getGUID();
                 String deployedDatabaseSchemaGuid = deployedDatabaseSchemaEntity.getGUID();
                 String relationalDBTypeGuid = relationalDBTypeEntity.getGUID();
                 // create the 2 relationships
-                createReferenceRelationship(DATA_CONTENT_FOR_DATASET,
+                createReferenceRelationship(ASSET_SCHEMA_TYPE,
                                             databaseGuid,
                                             DATABASE,
                                             deployedDatabaseSchemaGuid,
                                             DEPLOYED_DATABASE_SCHEMA);
 
-                createReferenceRelationship(ASSET_SCHEMA_TYPE,
+                createReferenceRelationship(DATA_CONTENT_FOR_DATASET,
                                             deployedDatabaseSchemaGuid,
                                             DEPLOYED_DATABASE_SCHEMA,
                                             relationalDBTypeGuid,
@@ -588,6 +599,18 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                         COLUMN);
 
                         }
+//                        Table table = client.getTable(catName, "default", tableName);
+//                        System.err.println("Table: " + tableName);
+//                        System.err.println("Columns: ");
+//                        StorageDescriptor sd = table.getSd();
+//                        Iterator<FieldSchema> iter = sd.getColsIterator();
+//                        while (iter.hasNext()) {
+//                            FieldSchema fieldSchema = iter.next();
+//
+//                            System.err.println("Column name = " +fieldSchema.getName());
+//                            System.err.println("Column type = " +fieldSchema.getType());
+//                            System.err.println("Column comment = " +fieldSchema.getComment());
+//                            System.err.println("|||||");
                     }
                 }
             } catch (TException e) {
