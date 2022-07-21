@@ -411,12 +411,11 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
          * entity guid. A list of relationships is found, for each relationship we add the relationship to the
          * relationship list and the entity at the other end to the entity list.
          *
-         * The list of the entity guids that we found
          * @param relationshipTypeName - type of the relationships or entity
-         * @param startEntityGUID - known end
+         * @param startEntityGUID - entity guid of the end we know
          * @param entityList - the list of entities to update
          * @param relationshipList - the list of relationships to update
-         * @return a list of the guids of the other ends
+         * @return a list of the guids of the other end entities
          * @throws ConnectorCheckedException error getting the relationships
          */
         private List<String> updateRelationshipAndEntityLists(String relationshipTypeName, String startEntityGUID, List<EntityDetail> entityList, List<Relationship> relationshipList) throws ConnectorCheckedException {
