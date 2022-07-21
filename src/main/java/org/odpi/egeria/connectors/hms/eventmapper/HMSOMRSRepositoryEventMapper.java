@@ -4,7 +4,6 @@ package org.odpi.egeria.connectors.hms.eventmapper;
 
 
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
@@ -164,9 +163,10 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 conf.set("metastore.truststore.path", "file:///" + System.getProperty("java.home") + "/lib/security/cacerts");
                 conf.set("metastore.truststore.password", "changeit");
                 conf.set("metastore.client.auth.mode", "PLAIN");
+                conf.set("metastore.client.plain.username", metadata_store_userId);
+                conf.set("metastore.client.plain.password", metadata_store_password);
             }
-            conf.set("metastore.client.plain.username", metadata_store_userId);
-            conf.set("metastore.client.plain.password", metadata_store_password);
+
 
             client = new HiveMetaStoreClient(conf, null, false);
             metadataCollection = this.repositoryConnector.getMetadataCollection();
@@ -357,16 +357,44 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             List<EntityDetail> entityList = new ArrayList<>();
             entityList.add(databaseEntity);
 
-            List<String> connectionGuids = updateRelationshipList(CONNECTION_TO_ASSET, databaseGUID, entityList, relationshipList);
+            List<String> connectionGuids = updateRelationshipAndEntityLists(CONNECTION_TO_ASSET, databaseGUID, entityList, relationshipList);
             if (connectionGuids != null && connectionGuids.size() > 0) {
                 for (String connectionGUID : connectionGuids) {
-                    updateRelationshipList(CONNECTION_CONNECTOR_TYPE, connectionGUID, entityList, relationshipList);
-                    updateRelationshipList(CONNECTION_ENDPOINT, connectionGUID, entityList, relationshipList);
+                    updateRelationshipAndEntityLists(CONNECTION_CONNECTOR_TYPE, connectionGUID, entityList, relationshipList);
+                    updateRelationshipAndEntityLists(CONNECTION_ENDPOINT, connectionGUID, entityList, relationshipList);
                 }
             }
-             // add in the other entities and relationships
-            
+            List<String> deployedDatabaseSchemaGuids = updateRelationshipAndEntityLists(ASSET_SCHEMA_TYPE, databaseGUID, entityList, relationshipList);
 
+            if (deployedDatabaseSchemaGuids != null && deployedDatabaseSchemaGuids.size() > 0) {
+                for (String deployedDatabaseSchemaGuid : deployedDatabaseSchemaGuids) {
+                    List<String> relationalDBSchemaTypeGuids = updateRelationshipAndEntityLists(DATA_CONTENT_FOR_DATASET, deployedDatabaseSchemaGuid, entityList, relationshipList);
+                    issueBatchEvent(relationshipList, entityList);
+
+                    if (relationalDBSchemaTypeGuids != null && relationalDBSchemaTypeGuids.size() > 0) {
+                        for (String relationalDBSchemaTypeGuid : relationalDBSchemaTypeGuids) {
+                            /* for each relationalTable send a separate batch event with
+                             *  - relationship to relationalTable (ATTRIBUTE_FOR_SCHEMA)
+                             *  - relational table
+                             *  - relationships to columns (NESTED_SCHEMA_ATTRIBUTE)
+                             *  - relationalColumns
+                             */
+                            List<Relationship> tableRelationshipList = new ArrayList<>();
+                            List<EntityDetail> tableEntityList = new ArrayList<>();
+                            List<String> relationalTableGuids = updateRelationshipAndEntityLists(ATTRIBUTE_FOR_SCHEMA, relationalDBSchemaTypeGuid, tableEntityList, tableRelationshipList);
+                            if (relationalTableGuids != null && relationalTableGuids.size() > 0) {
+                                for (String relationalTableGuid : relationalTableGuids) {
+                                    updateRelationshipAndEntityLists(NESTED_SCHEMA_ATTRIBUTE, relationalTableGuid, tableEntityList, tableRelationshipList);
+                                }
+                            }
+                            issueBatchEvent(tableRelationshipList, tableEntityList);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void issueBatchEvent(List<Relationship> relationshipList, List<EntityDetail> entityList) {
             InstanceGraph instances = new InstanceGraph(entityList, relationshipList);
 
             // send the event
@@ -376,14 +404,23 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                                repositoryConnector.getServerType(),
                                                                repositoryConnector.getOrganizationName(),
                                                                instances);
-            // for each table add the relationship, table , relationship to column and column
-            
-
-
         }
 
-        private List<String> updateRelationshipList(String relationshipTypeName, String startEntityGUID, List<EntityDetail> entityList, List<Relationship> relationshipList) throws ConnectorCheckedException {
-            String methodName = "updateRelationshipList";
+        /**
+         * This method is passed an entity guid and a relationship type name, it gets the relationships based on the name and
+         * entity guid. A list of relationships is found, for each relationship we add the relationship to the
+         * relationship list and the entity at the other end to the entity list.
+         *
+         * The list of the entity guids that we found
+         * @param relationshipTypeName - type of the relationships or entity
+         * @param startEntityGUID - known end
+         * @param entityList - the list of entities to update
+         * @param relationshipList - the list of relationships to update
+         * @return a list of the guids of the other ends
+         * @throws ConnectorCheckedException error getting the relationships
+         */
+        private List<String> updateRelationshipAndEntityLists(String relationshipTypeName, String startEntityGUID, List<EntityDetail> entityList, List<Relationship> relationshipList) throws ConnectorCheckedException {
+            String methodName = "updateRelationshipAndEntityLists";
 
             List<String> otherEndGuids = new ArrayList<>();
             TypeDefSummary typeDefSummary = repositoryHelper.getTypeDefByName(methodName, relationshipTypeName);
