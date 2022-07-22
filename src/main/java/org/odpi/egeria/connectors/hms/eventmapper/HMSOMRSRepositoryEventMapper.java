@@ -577,61 +577,72 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                     // create each table and relationship
                     for (String tableName : tables) {
                         Table table = client.getTable(catName, dbName, tableName);
-                        String tableCanonicalName = baseCanonicalName + "_schema_" + tableName;
-                        EntityDetail tableEntity = getEntityDetailSkeleton(methodName,
-                                                                           TABLE,
-                                                                           tableName,
-                                                                           tableCanonicalName,
-                                                                           null,
-                                                                           true);
+                        String tableType = table.getTableType();
+                        if (tableType != null && tableType.equals("EXTERNAL_TABLE")) {
+                            String tableCanonicalName = baseCanonicalName + "_schema_" + tableName;
+                            EntityDetail tableEntity = getEntityDetailSkeleton(methodName,
+                                                                               TABLE,
+                                                                               tableName,
+                                                                               tableCanonicalName,
+                                                                               null,
+                                                                               true);
+//                            String owner = table.getOwner();
+//                            if (owner != null) {
+//                                tableEntity.setOwner(owner);
+//                            }
+                            int createTime = table.getCreateTime();
+                            tableEntity.setCreateTime(new Date(createTime));
 
 
-                        List<Classification> tableClassifications = tableEntity.getClassifications();
-                        if (tableClassifications == null) {
-                            tableClassifications = new ArrayList<>();
-                        }
-                        Classification classification = createTypeEmbeddedClassificationForTable(methodName, tableEntity);
-                        tableClassifications.add(classification);
-                        tableEntity.setClassifications(tableClassifications);
-
-                        issueSaveEntityReferenceCopy(tableEntity);
-                        String tableGuid = tableEntity.getGUID();
-                        // relationship
-
-
-                        createReferenceRelationship(ATTRIBUTE_FOR_SCHEMA,
-                                                    relationalDBTypeGuid,
-                                                    RELATIONAL_DB_SCHEMA_TYPE,
-                                                    tableGuid,
-                                                    TABLE);
-
-                        Iterator<FieldSchema> colsIterator = table.getSd().getColsIterator();
-
-                        while (colsIterator.hasNext()) {
-                            FieldSchema fieldSchema = colsIterator.next();
-                            String columnName = fieldSchema.getName();
-
-                            EntityDetail columnEntity = getEntityDetailSkeleton(methodName,
-                                                                                COLUMN,
-                                                                                columnName,
-                                                                                tableCanonicalName + "_" + columnName,
-                                                                                null,
-                                                                                true);
-                            String dataType = fieldSchema.getType();
-
-                            List<Classification> columnClassifications = columnEntity.getClassifications();
-                            if (columnClassifications == null) {
-                                columnClassifications = new ArrayList();
+                            List<Classification> tableClassifications = tableEntity.getClassifications();
+                            if (tableClassifications == null) {
+                                tableClassifications = new ArrayList<>();
                             }
-                            columnClassifications.add(createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity,dataType));
-                            columnEntity.setClassifications(columnClassifications);
-                            issueSaveEntityReferenceCopy(columnEntity);
+                            Classification classification = createTypeEmbeddedClassificationForTable(methodName, tableEntity);
+                            tableClassifications.add(classification);
+                            tableEntity.setClassifications(tableClassifications);
 
-                            createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
+                            issueSaveEntityReferenceCopy(tableEntity);
+                            String tableGuid = tableEntity.getGUID();
+                            // relationship
+
+
+                            createReferenceRelationship(ATTRIBUTE_FOR_SCHEMA,
+                                                        relationalDBTypeGuid,
+                                                        RELATIONAL_DB_SCHEMA_TYPE,
                                                         tableGuid,
-                                                        TABLE,
-                                                        columnEntity.getGUID(),
-                                                        COLUMN);
+                                                        TABLE);
+
+                            Iterator<FieldSchema> colsIterator = table.getSd().getColsIterator();
+
+                            while (colsIterator.hasNext()) {
+                                FieldSchema fieldSchema = colsIterator.next();
+                                String columnName = fieldSchema.getName();
+
+                                EntityDetail columnEntity = getEntityDetailSkeleton(methodName,
+                                                                                    COLUMN,
+                                                                                    columnName,
+                                                                                    tableCanonicalName + "_" + columnName,
+                                                                                    null,
+                                                                                    true);
+                                String dataType = fieldSchema.getType();
+
+                                List<Classification> columnClassifications = columnEntity.getClassifications();
+                                if (columnClassifications == null) {
+                                    columnClassifications = new ArrayList();
+                                }
+                                columnClassifications.add(createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
+                                columnEntity.setClassifications(columnClassifications);
+                                issueSaveEntityReferenceCopy(columnEntity);
+
+                                createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
+                                                            tableGuid,
+                                                            TABLE,
+                                                            columnEntity.getGUID(),
+                                                            COLUMN);
+                            }
+                        } else {
+                            // debug - found a non table
                         }
                     }
                 }
