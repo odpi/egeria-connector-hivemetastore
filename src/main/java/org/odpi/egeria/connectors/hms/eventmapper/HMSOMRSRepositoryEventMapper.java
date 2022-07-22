@@ -12,6 +12,7 @@ import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedExceptio
 import org.odpi.openmetadata.frameworks.connectors.properties.EndpointProperties;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.OMRSMetadataCollection;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.*;
+import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.PrimitiveDefCategory;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDef;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDefSummary;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryeventmapper.OMRSRepositoryEventMapperBase;
@@ -71,6 +72,9 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
     // classification
     private static final String TYPE_EMBEDDED_ATTRIBUTE = "TypeEmbeddedAttribute";
 
+    private static final String RELATIONAL_TABLE_TYPE = "RelationalTableType";
+    private static final String RELATIONAL_COLUMN_TYPE = "RelationalColumnType";
+
     /**
      * Running field is a thread safe indicator that the thread is running. So stop the thread set the running flag to false.
      */
@@ -117,13 +121,14 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             "SchemaAttribute",
             "SchemaElement",
             "ComplexSchemaType",
-            "SchemaType"
+            "SchemaType",
 
-            // type embedded attribute ?
+            RELATIONAL_TABLE_TYPE ,
+            RELATIONAL_COLUMN_TYPE,
 
             // classification types
-            // none at this time
-    });
+            TYPE_EMBEDDED_ATTRIBUTE,
+            });
 
     private String catName = "spark";
     private String dbName = "default";
@@ -254,7 +259,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 //            }
         Boolean configuredSendPollEvents = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS);
         if (configuredSendPollEvents != null) {
-           sendPollEvents = configuredSendPollEvents;
+            sendPollEvents = configuredSendPollEvents;
         }
         Boolean configuredSUseSSL = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.USE_SSL);
         if (configuredSUseSSL != null) {
@@ -279,29 +284,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 auditLog.logMessage("stop", HMSOMRSAuditCode.POLLING_THREAD_INFO_ALREADY_STOPPED.getMessageDefinition());
             }
         }
-
-//        private List<EntityDetail> getEntitiesByType(String typeName) throws ConnectorCheckedException {
-//            String methodName = "getEntitiesByType(String typeName)";
-//            List<EntityDetail> entityDetails = null;
-//            try {
-//                entityDetails = getEntitiesByTypeGuid(typeName);
-//            } catch (InvalidParameterException e) {
-//                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-//            } catch (RepositoryErrorException e) {
-//                raiseConnectorCheckedException(HMSOMRSErrorCode.REPOSITORY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-//            } catch (TypeErrorException e) {
-//                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-//            } catch (PropertyErrorException e) {
-//                raiseConnectorCheckedException(HMSOMRSErrorCode.PROPERTY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-//            } catch (PagingErrorException e) {
-//                raiseConnectorCheckedException(HMSOMRSErrorCode.PAGING_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-//            } catch (FunctionNotSupportedException e) {
-//                raiseConnectorCheckedException(HMSOMRSErrorCode.FUNCTION_NOT_SUPPORTED_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-//            } catch (UserNotAuthorizedException e) {
-//                raiseConnectorCheckedException(HMSOMRSErrorCode.USER_NOT_AUTHORIZED_EXCEPTION, methodName, e, repositoryConnector.getServerName());
-//            }
-//            return entityDetails;
-//        }
 
         private List<Relationship> getRelationshipsForEntityHelper(
                 String entityGUID,
@@ -439,7 +421,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
         }
 
-   
+
         @Override
         public void run() {
 
@@ -539,7 +521,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             HiveMetaStoreClient client = null;
             try {
                 try {
-                   client = connectToHMS();
+                    client = connectToHMS();
                 } catch (RepositoryErrorException cause) {
                     raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
                 }
@@ -603,11 +585,23 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                                            tableCanonicalName,
                                                                            null,
                                                                            true);
+//                        String type = null;
+                        //createTypeEmbeddedClassificationForColumns(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
+
+
+                        List<Classification> tableClassifications = tableEntity.getClassifications();
+                        if (tableClassifications == null) {
+                            tableClassifications = new ArrayList();
+                        }
+                        Classification classification = createTypeEmbeddedClassificationForTable("refreshRepository", tableEntity);
+                        tableClassifications.add(classification);
+                        tableEntity.setClassifications(tableClassifications);
+
                         issueSaveEntityReferenceCopy(tableEntity);
                         String tableGuid = tableEntity.getGUID();
                         // relationship
 
-                        // TODO type embedded classification
+
                         createReferenceRelationship(ATTRIBUTE_FOR_SCHEMA,
                                                     relationalDBTypeGuid,
                                                     RELATIONAL_DB_SCHEMA_TYPE,
@@ -619,13 +613,21 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                         while (colsIterator.hasNext()) {
                             FieldSchema fieldSchema = colsIterator.next();
                             String columnName = fieldSchema.getName();
-                            // TODO type embedded classification
+
                             EntityDetail columnEntity = getEntityDetailSkeleton(methodName,
                                                                                 COLUMN,
                                                                                 columnName,
                                                                                 tableCanonicalName + "_" + columnName,
                                                                                 null,
                                                                                 true);
+                            String dataType = fieldSchema.getType();
+
+                            List<Classification> columnClassifications = columnEntity.getClassifications();
+                            if (columnClassifications == null) {
+                                columnClassifications = new ArrayList();
+                            }
+                            columnClassifications.add(createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity,dataType));
+                            columnEntity.setClassifications(columnClassifications);
                             issueSaveEntityReferenceCopy(columnEntity);
 
                             createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
@@ -633,23 +635,10 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                         TABLE,
                                                         columnEntity.getGUID(),
                                                         COLUMN);
-
                         }
-//                        Table table = client.getTable(catName, "default", tableName);
-//                        System.err.println("Table: " + tableName);
-//                        System.err.println("Columns: ");
-//                        StorageDescriptor sd = table.getSd();
-//                        Iterator<FieldSchema> iter = sd.getColsIterator();
-//                        while (iter.hasNext()) {
-//                            FieldSchema fieldSchema = iter.next();
-//
-//                            System.err.println("Column name = " +fieldSchema.getName());
-//                            System.err.println("Column type = " +fieldSchema.getType());
-//                            System.err.println("Column comment = " +fieldSchema.getComment());
-//                            System.err.println("|||||");
                     }
                 }
-            } catch (TException e) {
+            } catch (TException | TypeErrorException e) {
                 // TODO log properly
                 System.out.println("Server error: " +e.toString());
                 e.printStackTrace();
@@ -908,7 +897,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             // if the name changes then this is an add and a delete
             long version = 1;
             if (generateUniqueVersion) {
-                    version = System.currentTimeMillis();
+                version = System.currentTimeMillis();
             }
             entityToAdd.setVersion(version);
 
@@ -927,93 +916,84 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             }
         }
 
+        private Classification createTypeEmbeddedClassificationForColumn(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
+            String methodName = "createTypeEmbeddedClassificationForColumn";
+            Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, "TypeEmbeddedAttribute", entity.getType().getTypeDefName());
 
-        private List<EntityDetail> getEntitiesByTypeGuid(String typeName) throws
-                                                                          InvalidParameterException,
-                                                                          RepositoryErrorException,
-                                                                          TypeErrorException,
-                                                                          PropertyErrorException,
-                                                                          PagingErrorException,
-                                                                          FunctionNotSupportedException,
-                                                                          UserNotAuthorizedException,
-                                                                          ConnectorCheckedException {
-            String methodName = "getEntitiesByTypeGuid";
-            String typeGUID = typeNameToGuidMap.get(typeName);
-            if (typeGUID == null) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, null, repositoryConnector.getServerName());
-                return null;
+            InstanceProperties instanceProperties = new InstanceProperties();
+            repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", RELATIONAL_COLUMN_TYPE, methodName);
+            repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "dataType", dataType, methodName);
+            classification.setProperties(instanceProperties);
+            repositoryHelper.addClassificationToEntity(apiName, entity,classification, methodName);
+
+            return classification;
+        }
+        private Classification createTypeEmbeddedClassificationForTable(String apiName, EntityDetail entity) throws TypeErrorException {
+            String methodName = "createTypeEmbeddedClassificationForTable";
+            Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, "TypeEmbeddedAttribute", entity.getType().getTypeDefName());
+            InstanceProperties instanceProperties = new InstanceProperties();
+            repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", RELATIONAL_TABLE_TYPE, methodName);
+            classification.setProperties(instanceProperties);
+            repositoryHelper.addClassificationToEntity(apiName, entity,classification, methodName);
+
+            return classification;
+        }
+
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        synchronized public void disconnect() throws ConnectorCheckedException {
+            super.disconnect();
+            final String methodName = "disconnect";
+            pollingThread.stop();
+            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
+        }
+
+        /**
+         * Throws a ConnectorCheckedException based on the provided parameters.
+         *
+         * @param errorCode  the error code for the exception
+         * @param methodName the method name throwing the exception
+         * @param cause      the underlying cause of the exception (if any, otherwise null)
+         * @param params     any additional parameters for formatting the error message
+         * @throws ConnectorCheckedException always
+         */
+        private void raiseConnectorCheckedException(HMSOMRSErrorCode errorCode, String methodName, Exception cause, String... params) throws ConnectorCheckedException {
+            if (cause == null) {
+                throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
+                                                    this.getClass().getName(),
+                                                    methodName);
             } else {
-                return metadataCollection.findEntities(
-                        userId,
-                        typeGUID,
-                        null,
-                        null,
-                        0,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        0);
+                throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
+                                                    this.getClass().getName(),
+                                                    methodName,
+                                                    cause);
             }
         }
-    }
 
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void disconnect() throws ConnectorCheckedException {
-        super.disconnect();
-        final String methodName = "disconnect";
-        pollingThread.stop();
-        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
-    }
-
-    /**
-     * Throws a ConnectorCheckedException based on the provided parameters.
-     *
-     * @param errorCode  the error code for the exception
-     * @param methodName the method name throwing the exception
-     * @param cause      the underlying cause of the exception (if any, otherwise null)
-     * @param params     any additional parameters for formatting the error message
-     * @throws ConnectorCheckedException always
-     */
-    private void raiseConnectorCheckedException(HMSOMRSErrorCode errorCode, String methodName, Exception cause, String... params) throws ConnectorCheckedException {
-        if (cause == null) {
-            throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
-                                                this.getClass().getName(),
-                                                methodName);
-        } else {
-            throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                cause);
+        /**
+         * Throws a RepositoryErrorException using the provided parameters.
+         *
+         * @param errorCode  the error code for the exception
+         * @param methodName the name of the method throwing the exception
+         * @param cause      the underlying cause of the exception (or null if none)
+         * @param params     any parameters for formatting the error message
+         * @throws RepositoryErrorException always
+         */
+        private void raiseRepositoryErrorException(HMSOMRSErrorCode errorCode, String methodName, Throwable cause, String... params) throws RepositoryErrorException {
+            if (cause == null) {
+                throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
+                                                   this.getClass().getName(),
+                                                   methodName);
+            } else {
+                throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
+                                                   this.getClass().getName(),
+                                                   methodName,
+                                                   cause);
+            }
         }
+
+
     }
-
-    /**
-     * Throws a RepositoryErrorException using the provided parameters.
-     *
-     * @param errorCode  the error code for the exception
-     * @param methodName the name of the method throwing the exception
-     * @param cause      the underlying cause of the exception (or null if none)
-     * @param params     any parameters for formatting the error message
-     * @throws RepositoryErrorException always
-     */
-    private void raiseRepositoryErrorException(HMSOMRSErrorCode errorCode, String methodName, Throwable cause, String... params) throws RepositoryErrorException {
-        if (cause == null) {
-            throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
-                                               this.getClass().getName(),
-                                               methodName);
-        } else {
-            throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               cause);
-        }
-    }
-
-
-}
