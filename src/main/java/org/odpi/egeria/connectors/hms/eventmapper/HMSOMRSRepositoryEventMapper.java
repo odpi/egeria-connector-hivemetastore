@@ -915,85 +915,86 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                              methodName);
             }
         }
-
-        private Classification createTypeEmbeddedClassificationForColumn(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
-            String methodName = "createTypeEmbeddedClassificationForColumn";
-            Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, "TypeEmbeddedAttribute", entity.getType().getTypeDefName());
-
-            InstanceProperties instanceProperties = new InstanceProperties();
-            repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", RELATIONAL_COLUMN_TYPE, methodName);
-            repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "dataType", dataType, methodName);
-            classification.setProperties(instanceProperties);
-            repositoryHelper.addClassificationToEntity(apiName, entity,classification, methodName);
-
-            return classification;
-        }
-        private Classification createTypeEmbeddedClassificationForTable(String apiName, EntityDetail entity) throws TypeErrorException {
-            String methodName = "createTypeEmbeddedClassificationForTable";
-            Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, "TypeEmbeddedAttribute", entity.getType().getTypeDefName());
-            InstanceProperties instanceProperties = new InstanceProperties();
-            repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", RELATIONAL_TABLE_TYPE, methodName);
-            classification.setProperties(instanceProperties);
-            repositoryHelper.addClassificationToEntity(apiName, entity,classification, methodName);
-
-            return classification;
-        }
-
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        synchronized public void disconnect() throws ConnectorCheckedException {
-            super.disconnect();
-            final String methodName = "disconnect";
-            pollingThread.stop();
-            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
-        }
-
-        /**
-         * Throws a ConnectorCheckedException based on the provided parameters.
-         *
-         * @param errorCode  the error code for the exception
-         * @param methodName the method name throwing the exception
-         * @param cause      the underlying cause of the exception (if any, otherwise null)
-         * @param params     any additional parameters for formatting the error message
-         * @throws ConnectorCheckedException always
-         */
-        private void raiseConnectorCheckedException(HMSOMRSErrorCode errorCode, String methodName, Exception cause, String... params) throws ConnectorCheckedException {
-            if (cause == null) {
-                throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
-                                                    this.getClass().getName(),
-                                                    methodName);
-            } else {
-                throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
-                                                    this.getClass().getName(),
-                                                    methodName,
-                                                    cause);
-            }
-        }
-
-        /**
-         * Throws a RepositoryErrorException using the provided parameters.
-         *
-         * @param errorCode  the error code for the exception
-         * @param methodName the name of the method throwing the exception
-         * @param cause      the underlying cause of the exception (or null if none)
-         * @param params     any parameters for formatting the error message
-         * @throws RepositoryErrorException always
-         */
-        private void raiseRepositoryErrorException(HMSOMRSErrorCode errorCode, String methodName, Throwable cause, String... params) throws RepositoryErrorException {
-            if (cause == null) {
-                throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
-                                                   this.getClass().getName(),
-                                                   methodName);
-            } else {
-                throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   cause);
-            }
-        }
-
-
     }
+
+    private Classification createTypeEmbeddedClassificationForColumn(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
+        String methodName = "createTypeEmbeddedClassificationForColumn";
+        Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, "TypeEmbeddedAttribute", entity.getType().getTypeDefName());
+
+        InstanceProperties instanceProperties = new InstanceProperties();
+        repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", RELATIONAL_COLUMN_TYPE, methodName);
+        repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "dataType", dataType, methodName);
+        classification.setProperties(instanceProperties);
+        repositoryHelper.addClassificationToEntity(apiName, entity,classification, methodName);
+
+        return classification;
+    }
+    private Classification createTypeEmbeddedClassificationForTable(String apiName, EntityDetail entity) throws TypeErrorException {
+        String methodName = "createTypeEmbeddedClassificationForTable";
+        Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, "TypeEmbeddedAttribute", entity.getType().getTypeDefName());
+        InstanceProperties instanceProperties = new InstanceProperties();
+        repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", RELATIONAL_TABLE_TYPE, methodName);
+        classification.setProperties(instanceProperties);
+        repositoryHelper.addClassificationToEntity(apiName, entity,classification, methodName);
+
+        return classification;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    synchronized public void disconnect() throws ConnectorCheckedException {
+        super.disconnect();
+        final String methodName = "disconnect";
+        pollingThread.stop();
+        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
+    }
+
+    /**
+     * Throws a ConnectorCheckedException based on the provided parameters.
+     *
+     * @param errorCode  the error code for the exception
+     * @param methodName the method name throwing the exception
+     * @param cause      the underlying cause of the exception (if any, otherwise null)
+     * @param params     any additional parameters for formatting the error message
+     * @throws ConnectorCheckedException always
+     */
+    private void raiseConnectorCheckedException(HMSOMRSErrorCode errorCode, String methodName, Exception cause, String... params) throws ConnectorCheckedException {
+        if (cause == null) {
+            throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
+                                                this.getClass().getName(),
+                                                methodName);
+        } else {
+            throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
+                                                this.getClass().getName(),
+                                                methodName,
+                                                cause);
+        }
+    }
+
+    /**
+     * Throws a RepositoryErrorException using the provided parameters.
+     *
+     * @param errorCode  the error code for the exception
+     * @param methodName the name of the method throwing the exception
+     * @param cause      the underlying cause of the exception (or null if none)
+     * @param params     any parameters for formatting the error message
+     * @throws RepositoryErrorException always
+     */
+    private void raiseRepositoryErrorException(HMSOMRSErrorCode errorCode, String methodName, Throwable cause, String... params) throws RepositoryErrorException {
+        if (cause == null) {
+            throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
+                                               this.getClass().getName(),
+                                               methodName);
+        } else {
+            throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               cause);
+        }
+    }
+
+
+}

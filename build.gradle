@@ -43,14 +43,21 @@ repositories {
 configurations.all {
     // check for updates every build - critical when using Snapshots
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-    // Explicit exclusions for transitive dependencices - logging
-    // picked up from hive libraries, we need to allow egeria to decide logging implementation
+    // Explicit exclusions for transitive dependencies - logging
+    // picked up from hive libraries, we need to allow Egeria to decide logging implementation
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     exclude group: 'org.slf4j', module: 'slf4j-reload4j'
     exclude group: 'ch.qos.reload4j', module: 'reload4j'
     exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
-    // TODO: Exclusing protobuf may not be needed as we are now shading
+    // TODO: Excluding protobuf may not be needed as we are now shading
     exclude group: 'com.google.protobuf', module: 'protobuf-java'
+
+    // exclude the following dependencies that we do not use, but bring in vulnerabilities from
+    // hadoop commons
+    exclude group: "org.eclipse.jetty"
+    exclude group: 'log4j', module: 'log4j:1.2.17'
+
+
 }
 
 // Project information
