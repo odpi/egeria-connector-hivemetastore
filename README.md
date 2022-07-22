@@ -3,9 +3,10 @@
 
 # Hive Metastore Repository Connector
 
-This repository has been created to manage artifacts and issues relating to integration with Hive metastore.
+In development.
 
-As of April 2022, No functional code is yet available, this repository will be updated when this changes.
+
+This repository has been created to manage artifacts and issues relating to integration with Hive metastore.
 
 If you are interested in Egeria connectivity to Hive metastore, please join us on our slack channels
 & community calls to discuss. You can find out more in the [Community Guide](http://egeria-project.org/guides/community/)

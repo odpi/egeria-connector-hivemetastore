@@ -1,0 +1,7 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright Contributors to the ODPi Egeria project. */
+
+/**
+ * Defines and implements the event mapper for Hive Metastore, this includes polling capability.
+ */
+package org.odpi.egeria.connectors.hms.eventmapper;
