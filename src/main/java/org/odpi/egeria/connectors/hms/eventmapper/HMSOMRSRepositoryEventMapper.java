@@ -588,7 +588,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
                         List<Classification> tableClassifications = tableEntity.getClassifications();
                         if (tableClassifications == null) {
-                            tableClassifications = new ArrayList();
+                            tableClassifications = new ArrayList<>();
                         }
                         Classification classification = createTypeEmbeddedClassificationForTable(methodName, tableEntity);
                         tableClassifications.add(classification);
