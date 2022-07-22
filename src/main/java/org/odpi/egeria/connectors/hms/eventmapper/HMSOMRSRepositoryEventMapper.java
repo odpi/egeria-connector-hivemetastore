@@ -71,7 +71,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
     private static final String NESTED_SCHEMA_ATTRIBUTE = "NestedSchemaAttribute";
     // classification
     private static final String TYPE_EMBEDDED_ATTRIBUTE = "TypeEmbeddedAttribute";
-
     private static final String RELATIONAL_TABLE_TYPE = "RelationalTableType";
     private static final String RELATIONAL_COLUMN_TYPE = "RelationalColumnType";
 
@@ -585,15 +584,13 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                                            tableCanonicalName,
                                                                            null,
                                                                            true);
-//                        String type = null;
-                        //createTypeEmbeddedClassificationForColumns(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
 
 
                         List<Classification> tableClassifications = tableEntity.getClassifications();
                         if (tableClassifications == null) {
                             tableClassifications = new ArrayList();
                         }
-                        Classification classification = createTypeEmbeddedClassificationForTable("refreshRepository", tableEntity);
+                        Classification classification = createTypeEmbeddedClassificationForTable(methodName, tableEntity);
                         tableClassifications.add(classification);
                         tableEntity.setClassifications(tableClassifications);
 
@@ -919,7 +916,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
     private Classification createTypeEmbeddedClassificationForColumn(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
         String methodName = "createTypeEmbeddedClassificationForColumn";
-        Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, "TypeEmbeddedAttribute", entity.getType().getTypeDefName());
+        Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, TYPE_EMBEDDED_ATTRIBUTE, entity.getType().getTypeDefName());
 
         InstanceProperties instanceProperties = new InstanceProperties();
         repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", RELATIONAL_COLUMN_TYPE, methodName);
@@ -931,7 +928,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
     }
     private Classification createTypeEmbeddedClassificationForTable(String apiName, EntityDetail entity) throws TypeErrorException {
         String methodName = "createTypeEmbeddedClassificationForTable";
-        Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, "TypeEmbeddedAttribute", entity.getType().getTypeDefName());
+        Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, TYPE_EMBEDDED_ATTRIBUTE, entity.getType().getTypeDefName());
         InstanceProperties instanceProperties = new InstanceProperties();
         repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", RELATIONAL_TABLE_TYPE, methodName);
         classification.setProperties(instanceProperties);
