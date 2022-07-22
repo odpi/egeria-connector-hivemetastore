@@ -56,7 +56,9 @@ configurations.all {
     // hadoop commons
     exclude group: "org.eclipse.jetty"
     exclude group: 'log4j', module: 'log4j:1.2.17'
-
+    exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
+    exclude group: 'io.netty'
+    exclude group: 'com.google.guava'
 
 }
 
