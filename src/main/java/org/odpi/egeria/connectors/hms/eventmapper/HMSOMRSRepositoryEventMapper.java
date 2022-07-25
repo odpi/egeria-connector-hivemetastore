@@ -160,7 +160,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
     private HiveMetaStoreClient connectToHMS() throws TException,RepositoryErrorException {
         String methodName = "connectToHMS";
-        l client = null;
+        HiveMetaStoreClient client = null;
         EndpointProperties endpointProperties = connectionProperties.getEndpoint();
         if (endpointProperties == null) {
             raiseRepositoryErrorException(HMSOMRSErrorCode.ENDPOINT_NOT_SUPPLIED_IN_CONFIG, methodName, null, "null");
