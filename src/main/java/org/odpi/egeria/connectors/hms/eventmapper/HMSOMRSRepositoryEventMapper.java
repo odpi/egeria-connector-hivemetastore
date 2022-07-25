@@ -119,18 +119,18 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             ENDPOINT,
             RELATIONAL_TABLE_TYPE ,
             RELATIONAL_COLUMN_TYPE,
-            RELATIONAL_TABLE_TYPE ,
-            RELATIONAL_COLUMN_TYPE,
-            COLUMN,
-            NESTED_SCHEMA_ATTRIBUTE,
-            ATTRIBUTE_FOR_SCHEMA,
             DATABASE,
             RELATIONAL_DB_SCHEMA_TYPE,
             TABLE,
+            COLUMN,
             // relationship types
             CONNECTION_ENDPOINT,
             CONNECTION_CONNECTOR_TYPE,
             CONNECTION_TO_ASSET,
+            ASSET_SCHEMA_TYPE,
+            ATTRIBUTE_FOR_SCHEMA,
+            NESTED_SCHEMA_ATTRIBUTE,
+            DATA_CONTENT_FOR_DATASET,
             // classification types
             TYPE_EMBEDDED_ATTRIBUTE,
             CALCULATED_VALUE
