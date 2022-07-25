@@ -1,36 +1,269 @@
-plugins {
-    id 'java'
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Contributors to the ODPi Egeria project.
+ */
+
+// Allow use of maven central to pickup additional plugins
+buildscript {
+    repositories {
+        mavenCentral()
+    }
 }
 
-group 'org.example'
-version '1.0-SNAPSHOT'
+plugins {
+    id 'java-library'
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id 'idea'
+    id 'maven-publish'
+    // Checks for unnecessary & problematic dependencies
+    id 'com.autonomousapps.dependency-analysis' version "1.10.0"
+    // helps resolve log implementation clashes
+    id 'dev.jacomet.logging-capabilities' version "0.10.0"
+    // This plugin helps resolve jakarta/javax clashes
+    id 'de.jjohannes.java-ecosystem-capabilities' version "0.4"
+}
+
+// Only do signing when running under github actinos
+if (System.getenv("CI")) {
+    apply plugin: 'signing'
+}
 
 repositories {
     mavenCentral()
-
-
+    maven { url("https://oss.sonatype.org/content/repositories/snapshots") }
+    // Needed for old jackson implementation fixed libraries (used in Egeria)
     maven {
-        url "https://mvnrepository.com/artifact/org.apache.hive/hive-metastore"
+        url "https://maven.atlassian.com/3rdparty"
     }
-
-    maven {
-        url 'https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients'
-    }
+    // uncomment to pick up from local ~/.m2 - but can be unpredictable. recommend to use maven central and snapshots
+    //mavenLocal()
 }
 
+// ensures we pick up the very latest snapshots when built
+configurations.all {
+    // check for updates every build - critical when using Snapshots
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    // Explicit exclusions for transitive dependencies - logging
+    // picked up from hive libraries, we need to allow Egeria to decide logging implementation
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+    exclude group: 'org.slf4j', module: 'slf4j-api'
+    exclude group: 'ch.qos.reload4j', module: 'reload4j'
+    exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+    // TODO: Excluding protobuf may not be needed as we are now shading
+    exclude group: 'com.google.protobuf', module: 'protobuf-java'
+
+    // exclude the following dependencies that we do not use, but bring in vulnerabilities from
+    // hadoop commons
+    exclude group: "org.eclipse.jetty"
+    exclude group: 'log4j', module: 'log4j'
+    exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
+    exclude group: 'io.netty'
+    exclude group: 'com.google.guava'
+
+}
+
+// Project information
+group = 'org.odpi.egeria'
+version = '1.0-SNAPSHOT'
+ext.name = 'Egeria Hive Metastore Connector'
+description = 'Egeria Connector for Hive Metastore'
+
+// Versions - most should be picked up from the import of the egeria base POM
+// TODO: Versions already in pom can be removed
+ext {
+    egeriaversion = '3.10'
+    slf4jVersion = '1.7.36'
+    jacksonVersion = '2.13.2'
+    jupiterVersion = '5.8.2'
+    httpclientVersion = '4.5.13'
+    springwebVersion = '5.3.19'
+    hiveversion = '3.1.3'
+}
+
+
+// Dependencies
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    // authoritative versions for dependencyManagement provided by egeria core - this uses the dependencyManagement
+    // in the main Egeria pom to define the versions of the dependencies.
+    implementation enforcedPlatform("org.odpi.egeria:egeria:${egeriaversion}")
 
-    implementation "org.odpi.egeria:repository-services-apis:3.4"
-    implementation "org.odpi.egeria:audit-log-framework:3.4"
-    implementation "org.odpi.egeria:open-connector-framework:3.4"
-    implementation "org.odpi.egeria:connector-configuration-factory:3.4"
+    // Only used for build - already present in server chassis at runtime - similar to 'provided' with maven
+    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
+
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compileOnly "org.springframework:spring-core:${springwebVersion}"
+    compileOnly "org.odpi.egeria:open-connector-framework:${egeriaversion}"
+    compileOnly "org.odpi.egeria:open-metadata-types:${egeriaversion}"
+    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
+    compileOnly "org.odpi.egeria:repository-services:${egeriaversion}"
+    compileOnly "org.odpi.egeria:repository-services-implementation:${egeriaversion}"
+    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
+    compileOnly "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
+    compileOnly "org.odpi.egeria:repository-services-apis:${egeriaversion}"
+    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
+    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
 
 
+    // TODO Move to maven artifact for local patched HMS Client - including patched log4j
+    implementation(files('libs/hive-metastore-standalone-client-3.1.2-sqlquery.jar'))
+    // Standard version
+//    implementation 'org.apache.hive:hive-standalone-metastore:3.1.3'
+    // Hive & Hadoop
+    implementation "org.apache.hadoop:hadoop-common:3.3.3"
+
+    // Only needed to compile test code
+    testCompileOnly "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
+    testCompileOnly "org.junit.jupiter:junit-jupiter-api:${jupiterVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}"
+    // not currently used
+    //testImplementation "org.odpi.egeria:topic-integrator-api:${egeriaversion}"
 
 }
 
+// Standard tests
 test {
     useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+    reports {
+        html.required = true
+    }
+    filter {
+        includeTestsMatching "*Test"
+    }
 }
+
+
+// Maven Central (technically sonatype oss) requires we distribute source and javadoc.
+// Also declare use of java 11 language & target
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+    withJavadocJar()
+    withSourcesJar()
+}
+
+// More Java language settings & linting
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
+    options.incremental = true
+    options.fork = true
+    options.failOnError = true
+    options.compilerArgs << '-Xlint:unchecked' << '-Xlint:deprecation'
+}
+
+// For later java versions this is recommended - keep conditional in case we want to build on 8
+javadoc {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+}
+
+// Build an uber jar with dependencies.
+shadowJar {
+    archiveClassifier = 'jar-with-dependencies'
+    // required as this hits a jar limit otherwise
+    zip64 true
+    // TODO: May not need to exclude, since we shade the dependencies
+    minimize {
+        exclude("com/google/protobuf/**")
+    }
+}
+
+// Configure Auto Relocation
+// TODO: Final output needs review - we may wish to exclude more & only relocate problematic clashes
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+task relocateShadowJar(type: ConfigureShadowRelocation) {
+    target = tasks.shadowJar
+    prefix = "myapp" // Default value is "shadow"
+
+}
+tasks.shadowJar.dependsOn tasks.relocateShadowJar
+
+// TODO Ensure we run checks (health) on final Jar, not initial
+build.dependsOn shadowJar
+build.dependsOn("buildHealth")
+
+// We only have a single artifact for now - this additional metadata is
+// required for publishing to maven central. Only doing signing in 'CI'
+publishing {
+    publications {
+        connector(MavenPublication) {
+            from components.java
+            pom {
+                url = 'http://egeria.odpi.org'
+                licenses {
+                    // Code
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                    // Docs
+                    license {
+                        name = 'Creative Commons Attribution 4.0 International (CC BY 4.0)'
+                        url = 'https://creativecommons.org/licenses/by/4.0'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'planetf1'
+                        name = 'Nigel Jones'
+                        email = 'nigel.l.jones+git@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/odpi/egeria-connector-repository-file-sample.git'
+                    developerConnection = 'scm:git:ssh://github.com/odpi/egeria-connector-repository-file-sample.git'
+                    url = 'http://github.com/odpi/egeria-connector-repository-file-sample/tree/main'
+                }
+            }
+            // Override the project name & description for the pom based on properties set in the child build.gradle (hard to default & required for maven central)
+            pom.withXml {
+                asNode().appendNode('name', "${project.ext.name}")
+                asNode().appendNode('description', "${project.description}")
+            }
+        }
+    }
+
+    // Release versions get pushed to staging area on maven central, snapshots to snapshot repo
+    // Secrets for credentials
+    if (System.getenv("CI")) {
+        repositories {
+            maven {
+                name = 'OSSRH'
+                def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+                def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots'
+                url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+                // User token (under profile) on oss.sonatype.org
+                credentials {
+                    username = System.getenv("OSSRH_USERNAME")
+                    password = System.getenv("OSSRH_TOKEN")
+                }
+            }
+        }
+    }
+}
+
+// To publish to ossrh we need to sign the artifacts - only in CI
+if (System.getenv("CI")) {
+    signing {
+        // This is the publication to sign
+        sign publishing.publications.connector
+        // gpg --export-secret-keys myemal@gmail.com | base64
+        def signingKey = System.getenv("OSSRH_GPG_PRIVATE_KEY")
+        // Passphrase for key
+        def signingPassword = System.getenv("OSSRH_GPG_PASSPHRASE")
+        // public key id (last 8 characters only) - note keys also need uploading to all the main registries
+        def signingKeyId = System.getenv("OSSRH_GPG_KEYID")
+        // We use these values from secrets rather than gradle.properties
+        useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+    }
+}
+
+
