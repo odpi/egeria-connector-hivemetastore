@@ -176,9 +176,16 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 conf.set("metastore.client.auth.mode", "PLAIN");
                 conf.set("metastore.client.plain.username", metadata_store_userId);
                 conf.set("metastore.client.plain.password", metadata_store_password);
+            } else {
+                // if this is not specified then client side user and group checking occurs on the file system.
+                // As the server is remote and may not be on this machine, we remove this check.
+                // If this is set / or left to default to true then we get this error:
+                // "java.lang.RuntimeException: java.lang.RuntimeException: java.lang.ClassNotFoundException:
+                // Class org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback not found"
+
+                // TODO consider allowing the user to provide their own config to allow them configuration flexibility
+                conf.set("metastore.execute.setugi","false");
             }
-
-
             client = new HiveMetaStoreClient(conf, null, false);
             metadataCollection = this.repositoryConnector.getMetadataCollection();
             if (this.userId == null) {
