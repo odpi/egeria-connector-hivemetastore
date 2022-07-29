@@ -878,8 +878,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
          * @param canonicalName unique name
          * @param attributeMap map of attributes
          * @param generateUniqueVersion whether to generate a unique version (only required if we are going to update the entity)
-         * @return EntityDetail
-         * @throws ConnectorCheckedException
+         * @return EntityDetail created entity detail
+         * @throws ConnectorCheckedException connector error
          */
         private EntityDetail getEntityDetailSkeleton(String originalMethodName,
                                                      String typeName,
