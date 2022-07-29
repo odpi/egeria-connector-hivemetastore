@@ -956,13 +956,18 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
          * @param attributeMap map of properties
          */
         void addPropertiesToInsanceProperties(InstanceProperties properties, Map<String, String> attributeMap) {
-            String methodName = "addPropertiesToInsanceProperties";
-            for (String attributeName : attributeMap.keySet()) {
-                repositoryHelper.addStringPropertyToInstance(methodName,
-                                                             properties,
-                                                             attributeName,
-                                                             attributeMap.get(attributeName),
-                                                             methodName);
+            String methodName = "addPropertiesToInstanceProperties";
+            if (attributeMap != null) {
+                Set<Map.Entry<String,String>> entrySet = attributeMap.entrySet();
+                Iterator<Map.Entry<String,String>> iter = entrySet.iterator();
+                while (iter.hasNext()) {
+                    Map.Entry<String,String>  entry = iter.next();
+                    repositoryHelper.addStringPropertyToInstance(methodName,
+                                                                 properties,
+                                                                 entry.getKey(),
+                                                                 entry.getValue(),
+                                                                 methodName);
+                }
             }
         }
     }
