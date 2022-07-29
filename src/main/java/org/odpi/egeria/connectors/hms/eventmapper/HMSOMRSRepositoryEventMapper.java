@@ -846,7 +846,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
          * @param guid GUID
          * @param typeName type name
          * @return entity proxy
-         * @throws ConnectorCheckedException
+         * @throws ConnectorCheckedException Connector errored
          */
         private EntityProxy getEntityProxySkeleton(String guid, String typeName) throws ConnectorCheckedException {
             String methodName = "getEntityProxySkeleton";
