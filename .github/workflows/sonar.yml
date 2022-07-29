@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Contributors to the ODPi Egeria project.
-name: Build
+name: Sonar
 on:
   push:
     branches:
@@ -9,7 +9,7 @@ on:
     types: [opened, synchronize, reopened]
 jobs:
   build:
-    name: Build
+    name: Sonar Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
