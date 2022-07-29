@@ -29,13 +29,11 @@ It shows how the event mapper polling loop:
 ### Working with Hive Metastore and its APIs.
 
 The Hive Metastore can be run as a standalone one. This standalone server jar file is also required for the Client
-API. The HMSClient API used is [https://github.com/apache/hive/blob/master/standalone-metastore/metastore-common/src/main/java/org/apache/hadoop/hive/metastore/HiveMetaStoreClient.java](https://github.com/apache/hive/blob/master/standalone-metastore/metastore-common/src/main/java/org/apache/hadoop/hive/metastore/HiveMetaStoreClient.java)
+API. The HMSClient API used is 
+[https://github.com/apache/hive/blob/master/standalone-metastore/metastore-common/src/main/java/org/apache/hadoop/hive/metastore/HiveMetaStoreClient.java](https://github.com/apache/hive/blob/master/standalone-metastore/metastore-common/src/main/java/org/apache/hadoop/hive/metastore/HiveMetaStoreClient.java)
 It uses the Thrift API to communicate with the Hive Metastore.
 At this time (July 2022) the version 3.1.3 of this Hive Metastore has [vulnerabilities](https://mvnrepository.com/artifact/org.apache.hive/hive-standalone-metastore/3.1.3)
-The approach taken for this connector is to use Apache 2 licenced [jar file](https://cloud.ibm.com/docs/sql-query?topic=sql-query-hive_metastore#hive_compatible_client)
-This jar file has already been patched to remove some vulnerabilities and provide extra classes to allow connection to the Data Engine in IBM Cloud.
-In addition to this a number of excludes were required in the gradle build file to ensure the appropriate vulnerable libraries are
-not present.
+A number of excludes were required in the gradle build file to ensure the appropriate vulnerable libraries are not present - as reported by Sonarscan and lift.
 
 HMS Client calls used:
 
