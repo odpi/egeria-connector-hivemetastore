@@ -3,8 +3,11 @@
 package org.odpi.egeria.connectors.hms.eventmapper;
 
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.thrift.TException;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
 import org.odpi.egeria.connectors.hms.repositoryconnector.CachingOMRSRepositoryProxyConnector;
@@ -12,7 +15,6 @@ import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedExceptio
 import org.odpi.openmetadata.frameworks.connectors.properties.EndpointProperties;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.OMRSMetadataCollection;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.*;
-import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.PrimitiveDefCategory;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDef;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDefSummary;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryeventmapper.OMRSRepositoryEventMapperBase;
@@ -22,23 +24,15 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-//import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.thrift.TException;
-
-import java.util.Arrays;
-import java.util.List;
-
 
 /**
- * HMSOMRSRepositoryEventMapper supports the event mapper function for a Hive metastore
- * when used as an open metadata repository.
+ * HMSOMRSRepositoryEventMapper supports the event mapper function for a Hive metastore used as an open metadata repository.
  *
  * This class is an implementation of an OMRS event mapper, it polls for content in Hive metastore and puts
- * that content into an embedded Egeria repository. It then (if configured to send batch events) extracts the content
- * from the embedded repository and sends as batched events.
- *
+ * that content into an embedded Egeria repository. It then (if configured to send batch events) extracts the entities and relationships
+ * from the embedded repository and sends a batchd event for
+ * 1) for the asset Entities and relationships
+ * 2) for each RelationalTable, it's RelationalColumns and associated relationships
  */
 public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 //        implements OpenMetadataTopicListener
@@ -432,8 +426,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             return otherEndGuids;
 
         }
-
-
         @Override
         public void run() {
 
@@ -531,12 +523,17 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         public void refreshRepository() throws ConnectorCheckedException {
             String methodName = "refreshRepository";
             HiveMetaStoreClient client = null;
-            try {
+
                 try {
                     client = connectToHMS();
                 } catch (RepositoryErrorException cause) {
+//                    TODO log error
+                    raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+                } catch (TException e) {
+                    // TODO log error
                     raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
                 }
+            try {
                 // Create database
                 String baseCanonicalName = catName + "::" + dbName;
                 EntityDetail databaseEntity = getEntityDetailSkeleton(methodName,
@@ -617,7 +614,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                         tableClassifications.add(classification);
                         if (tableType.equals("VIRTUAL_VIEW")) {
                             //Indicate that this table is a view using the classification
-                            tableClassifications.add(createCalculatedValueClassification("refreshRepository", tableEntity));
+                            tableClassifications.add(createCalculatedValueClassification("refreshRepository", tableEntity, table.getViewOriginalText()));
                         }
                         tableEntity.setClassifications(tableClassifications);
 
@@ -672,6 +669,16 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             }
         }
 
+        /**
+         * Create Connection orientated entities. an Asset can be associated with a Connection,
+         * which in turn has a ConnectionType and an Endpoint. Entities of these 3 types are created in this method
+         * and relationships are created between them.
+         *
+         * For more infomration on these entities see https://egeria-project.org/patterns/metadata-manager/overview/?h=asset+connections#asset-connections
+         * @param baseCanonicalName a unique name used as a base to create unique names for the entities
+         * @param databaseEntity the Database (which is a type of Asset)
+         * @throws ConnectorCheckedException connector exception
+         */
         private void createConnectionOrientatedEntities(String baseCanonicalName, EntityDetail databaseEntity) throws ConnectorCheckedException {
             String methodName = "createConnectionOrientatedEntities";
             String name = baseCanonicalName + "-connection";
@@ -709,11 +716,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                                   false);
             InstanceProperties instanceProperties = endpointEntity.getProperties();
             //TODO does passing a protocol make sense here?
-//            repositoryHelper.addStringPropertyToInstance(methodName,
-//                                                         instanceProperties,
-//                                                         "protocol",
-//                                                         "file",
-//                                                         methodName);
             repositoryHelper.addStringPropertyToInstance(methodName,
                                                          instanceProperties,
                                                          "networkAddress",
@@ -766,10 +768,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e);
             } catch (PropertyErrorException e) {
                 raiseConnectorCheckedException(HMSOMRSErrorCode.PROPERTY_ERROR_EXCEPTION, methodName, e);
-//                } catch (ClassificationErrorException e) {
-//                    raiseConnectorCheckedException(FileOMRSErrorCode.CLASSIFICATION_ERROR_EXCEPTION, methodName, e);
-//                } catch (StatusNotSupportedException e) {
-//                    raiseConnectorCheckedException(FileOMRSErrorCode.STATUS_NOT_SUPPORTED_ERROR_EXCEPTION, methodName, e);
             } catch (HomeEntityException e) {
                 raiseConnectorCheckedException(HMSOMRSErrorCode.HOME_ENTITY_ERROR_EXCEPTION, methodName, e);
             } catch (EntityConflictException e) {
@@ -843,6 +841,13 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
         }
 
+        /**
+         * Create an entity proxy with the supplied parameters
+         * @param guid GUID
+         * @param typeName type name
+         * @return entity proxy
+         * @throws ConnectorCheckedException
+         */
         private EntityProxy getEntityProxySkeleton(String guid, String typeName) throws ConnectorCheckedException {
             String methodName = "getEntityProxySkeleton";
             EntityProxy proxy = new EntityProxy();
@@ -865,6 +870,17 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             return proxy;
         }
 
+        /**
+         * Create a skeleton of the entities, populated with the parameters supplied
+         * @param originalMethodName callers method name - for diagnostics
+         * @param typeName type name of the entity
+         * @param name display name of the entity
+         * @param canonicalName unique name
+         * @param attributeMap map of attributes
+         * @param generateUniqueVersion whether to generate a unique version (only required if we are going to update the entity)
+         * @return EntityDetail
+         * @throws ConnectorCheckedException
+         */
         private EntityDetail getEntityDetailSkeleton(String originalMethodName,
                                                      String typeName,
                                                      String name,
@@ -894,7 +910,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                                              qualifiedNamePrefix + canonicalName,
                                                                              methodName);
             if (attributeMap != null && !attributeMap.keySet().isEmpty()) {
-                addTypeSpecificProperties(initialProperties, attributeMap);
+                addPropertiesToInsanceProperties(initialProperties, attributeMap);
             }
 
             EntityDetail entityToAdd = new EntityDetail();
@@ -903,7 +919,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             // set the provenance as local cohort
             entityToAdd.setInstanceProvenanceType(InstanceProvenanceType.LOCAL_COHORT);
             entityToAdd.setMetadataCollectionId(metadataCollectionId);
-//            entityToAdd.setMetadataCollectionName(metadataCollectionName);
 
             TypeDef typeDef = repositoryHelper.getTypeDefByName(methodName, typeName);
 
@@ -921,8 +936,10 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
             entityToAdd.setGUID(guid);
             entityToAdd.setStatus(InstanceStatus.ACTIVE);
-            // for this sample we only support add and delete so there is only one version
-            // if the name changes then this is an add and a delete
+            // for Entities that never change there is only a need for one version.
+            // Entities never change if they have no attributes other than name - we generated the qualifiedName and GUID from
+            // the name - so a change in name is a change in GUID, whcih would mean a delete then create.
+            // For entities with properties then those properties could be updated and they require a version.
             long version = 1;
             if (generateUniqueVersion) {
                 version = System.currentTimeMillis();
@@ -933,11 +950,16 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
         }
 
-        void addTypeSpecificProperties(InstanceProperties initialProperties, Map<String, String> attributeMap) {
-            String methodName = "addTypeSpecificProperties";
+        /**
+         * Add a map of properties to instance properties
+         * @param properties instance properties to be updated
+         * @param attributeMap map of properties
+         */
+        void addPropertiesToInsanceProperties(InstanceProperties properties, Map<String, String> attributeMap) {
+            String methodName = "addPropertiesToInsanceProperties";
             for (String attributeName : attributeMap.keySet()) {
                 repositoryHelper.addStringPropertyToInstance(methodName,
-                                                             initialProperties,
+                                                             properties,
                                                              attributeName,
                                                              attributeMap.get(attributeName),
                                                              methodName);
@@ -945,15 +967,36 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         }
     }
 
-    private Classification createCalculatedValueClassification(String apiName, EntityDetail entity) throws TypeErrorException {
+    /**
+     * Create the Calculated value classification
+     * @param apiName api name for diagnostics
+     * @param entity entity associated with the Classification
+     * @param formula formula associated with the view
+     * @return the Calculated Value classification
+     * @throws TypeErrorException there is an error associated with the types
+     */
+    private Classification createCalculatedValueClassification(String apiName, EntityDetail entity, String formula) throws TypeErrorException {
         String methodName = "createCalculatedValueClassification";
         Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, CALCULATED_VALUE, entity.getType().getTypeDefName());
-
+        InstanceProperties initialProperties = repositoryHelper.addStringPropertyToInstance(methodName,
+                                                                                            null,
+                                                                                            "formula",
+                                                                                            formula,
+                                                                                            methodName);
+        classification.setProperties(initialProperties);
         repositoryHelper.addClassificationToEntity(apiName, entity, classification, methodName);
 
         return classification;
     }
 
+    /**
+     * Create embedded type classification for column
+     * @param apiName api name for diagnostics
+     * @param entity entity the classification is associated with
+     * @param dataType type of the column
+     * @return TypeEmbeddedClassification
+     * @throws TypeErrorException there is an error associated with the types
+     */
     private Classification createTypeEmbeddedClassificationForColumn(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
         return createTypeEmbeddedClassification(apiName,RELATIONAL_COLUMN_TYPE, entity, dataType);
     }
@@ -964,7 +1007,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
      * @param apiName API name - for diagnostics
      * @param entity  - entity
      * @return the embedded type classification
-     * @throws TypeErrorException
+     * @throws TypeErrorException there is an error associated with the types
      */
     private Classification createTypeEmbeddedClassificationForTable(String apiName, EntityDetail entity) throws TypeErrorException {
 
@@ -984,12 +1027,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         return classification;
 
    }
-
-
-
-
-
-
 
     /**
      * {@inheritDoc}
@@ -1045,6 +1082,4 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                cause);
         }
     }
-
-
 }
