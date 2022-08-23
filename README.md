@@ -38,14 +38,11 @@ A number of excludes were required in the gradle build file to ensure the approp
 HMS Client calls used:
 
 
-| HMS Client call                                          | Description                                                                                            |
-|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| client.getTables(<<catName>>, <<dbName>>, "*")           | Get all the tables from the Catalog with name <<catName>> and database with name <<dbName>>            |
-| client.getTable(<<catName>>, <<dbName>>, <<tableName>>) | Get the table details for table named <<tableName>> , the table returned contains the column details   |
+| HMS Client call                                        | Description                                                                                                                         |
+|--------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| client.getTables(&lt;catName&gt;,  "*")          | Get all the tables from the Catalog with name &lt;catName&gt; and database with name &lt;dbName&gt;                                 |
+| client.getTable(&lt;catName&gt;, &lt;dbName&gt;, &lt;tableName&gt;) | Get the table details for table named &lt;tableName&gt; in Catalog &lt;catName&gt;, the table returned contains the column details |
 
-
-
-TODO ensure that this will work with the non IBM Hive Metastore ('vanilla' HMS).
 
 ### Hive Metastore mapping to Egeria OMRS open types
 
@@ -56,17 +53,17 @@ these are specified by name in the Egeria configuration.
 
 #### Entity Types 
 
-| HMS concept | Description                           | Egeria open Entity type | Comments                                                                                                   |
-|-------------|---------------------------------------|-------------------------|------------------------------------------------------------------------------------------------------------|
-| Catalog     | Higher level of container within Hive | Not modeled             | The getCatalogs API is not always present in all HMS implmentations (not present in the IBM Cloud version) |
-| Database    | Lives within a Catalog                | Database                |                                                                                                            |
-| n/a         | n/a                                   | Connection              | This represents the connection to the instance data                                                        |
-| n/a         | n/a                                   | ConnectionType          | This is the type of the connection                                                                         |
-| n/a         | n/a                                   | Endpoint                | This is where the endpoint information is stored                                                           |
-| n/a         | n/a                                   | DeployedDatabaseSchema  | Deployed Schema                                                                                            |
-| Database    | Lives within a Catalog                | RelationalDBSchemaType  | Database schema type                                                                                       |
-| Database    | Lives within a Catalog                | RelationalTable         | Relational Table                                                                                           |
-| Database    | Lives within a Catalog                | RelationalColumn        | Relational Column                                                                                          |
+| HMS concept | Description                           | Egeria open Entity type | Comments                                                                 |
+|-------------|---------------------------------------|-------------------------|--------------------------------------------------------------------------|
+| Catalog     | Higher level of container within Hive | Not modeled             | The getCatalogs API is not always present in all HMS implementations     |
+| Database    | Lives within a Catalog                | Database                |                                                                          |
+| n/a         | n/a                                   | Connection              | This represents the connection to the instance data                      |
+| n/a         | n/a                                   | ConnectionType          | This is the type of the connection                                       |
+| n/a         | n/a                                   | Endpoint                | This is where the endpoint information is stored                         |
+| n/a         | n/a                                   | DeployedDatabaseSchema  | Deployed Schema                                                          |
+| Database    | Lives within a Catalog                | RelationalDBSchemaType  | Database schema type                                                     |
+| Database    | Lives within a Catalog                | RelationalTable         | Relational Table                                                         |
+| Database    | Lives within a Catalog                | RelationalColumn        | Relational Column                                                        |
 
 #### Relationship Types
 
@@ -89,8 +86,7 @@ these are specified by name in the Egeria configuration.
 
 
 
-
-You may also find these links in the egeria documentation useful:
+You may also find these links in the Egeria documentation useful:
 * [Repository Connectors](https://egeria-project.org/concepts/repository-connector/)
 * [Integration Connector](http://egeria-project.org/concepts/integration-connector/)
 
