@@ -97,10 +97,10 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
                                    "Connector is unable to be used",
                                    "Logic error. Check the logs and debug."),
 
-    INVALID_TYPE_SUPPLIED_IN_CONFIGURATION(400, "OMRS-HMS-REPOSITORY-400-090 ",
-                           "Invalid type {0} supplied in the configuration",
+    TYPE_ERROR(400, "OMRS-HMS-REPOSITORY-400-090 ",
+                           "A Egeria call was made with an invalid type, the error was {0} ",
                            "Connector is unable to be used",
-                           "check the supportedTypeNames configuration parameter to only reference valid open types. Check the logs and debug."),
+                           "Raise a Git issue to have this investigated."),
 
     EVENT_MAPPER_IMPROPERLY_INITIALIZED(400, "OMRS-HMS-REPOSITORY-400-091 ",
                                         "The event mapper has been improperly initialized for repository {1}",

@@ -123,6 +123,19 @@ public enum HMSOMRSAuditCode implements AuditLogMessageSet {
                                                        "Connector is unable to be used",
                                                        "Check the logs for the details of the Exception and debug."),
 
+    HIVE_GETTABLES_FAILED("OMRS-HMS-REPOSITORY-023 ",
+                          OMRSAuditLogRecordSeverity.INFO,
+                          "The Hive metastore connector getTables call failed with error {0}",
+                          "Connector is will continue to poll and will pick up tables if they are added.",
+                          "Ensure that the Hive connection details correctly point to an active Hive server with tables defined"),
+
+    HIVE_GETTABLE_FAILED( "OMRS-HMS-REPOSITORY-024 ",
+                         OMRSAuditLogRecordSeverity.INFO,
+                         "The Hive metastore connector getTable for table {0} failed with error {1}",
+                         "Connector is will continue to poll, but this table will not be picked up.",
+                         "Review the error and assess why this table is not being. Raise a Git issue if it is not obvious what the cause is"),
+
+
     ;
 
 
