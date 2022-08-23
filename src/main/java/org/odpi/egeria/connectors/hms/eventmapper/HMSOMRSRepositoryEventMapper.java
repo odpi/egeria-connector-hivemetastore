@@ -171,11 +171,11 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 conf.set("metastore.client.plain.username", metadata_store_userId);
                 conf.set("metastore.client.plain.password", metadata_store_password);
             }
-                // if this is not specified then client side user and group checking occurs on the file system.
-                // As the server is remote and may not be on this machine, we remove this check.
-                // If this is set / or left to default to true then we get this error:
-                // "java.lang.RuntimeException: java.lang.RuntimeException: java.lang.ClassNotFoundException:
-                // Class org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback not found"
+            // if this is not specified then client side user and group checking occurs on the file system.
+            // As the server is remote and may not be on this machine, we remove this check.
+            // If this is set / or left to default to true then we get this error:
+            // "java.lang.RuntimeException: java.lang.RuntimeException: java.lang.ClassNotFoundException:
+            // Class org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback not found"
 
             // TODO consider allowing the user to provide their own config to allow them configuration flexibility
             conf.set("metastore.execute.setugi", "false");
@@ -525,15 +525,15 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             String methodName = "refreshRepository";
             HiveMetaStoreClient client = null;
 
-                try {
-                    client = connectToHMS();
-                } catch (RepositoryErrorException cause) {
+            try {
+                client = connectToHMS();
+            } catch (RepositoryErrorException cause) {
 //                    TODO log error
-                    raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
-                } catch (TException e) {
-                    // TODO log error
-                    raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
-                }
+                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+            } catch (TException e) {
+                // TODO log error
+                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+            }
             try {
                 // Create database
                 String baseCanonicalName = catName + "::" + dbName;
@@ -674,11 +674,11 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                         }
                     }
                 }
-                } catch (TypeErrorException e) {
-                    raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR, methodName, e, e.getMessage());
+            } catch (TypeErrorException e) {
+                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR, methodName, e, e.getMessage());
 
-                }
-                }
+            }
+        }
 
 
         /**
@@ -1043,7 +1043,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         repositoryHelper.addClassificationToEntity(apiName, entity, classification, methodName);
         return classification;
 
-   }
+    }
 
     /**
      * {@inheritDoc}
