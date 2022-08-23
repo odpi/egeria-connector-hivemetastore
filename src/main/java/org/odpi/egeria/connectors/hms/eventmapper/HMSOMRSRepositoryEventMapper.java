@@ -171,11 +171,11 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 conf.set("metastore.client.plain.username", metadata_store_userId);
                 conf.set("metastore.client.plain.password", metadata_store_password);
             }
-                // if this is not specified then client side user and group checking occurs on the file system.
-                // As the server is remote and may not be on this machine, we remove this check.
-                // If this is set / or left to default to true then we get this error:
-                // "java.lang.RuntimeException: java.lang.RuntimeException: java.lang.ClassNotFoundException:
-                // Class org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback not found"
+            // if this is not specified then client side user and group checking occurs on the file system.
+            // As the server is remote and may not be on this machine, we remove this check.
+            // If this is set / or left to default to true then we get this error:
+            // "java.lang.RuntimeException: java.lang.RuntimeException: java.lang.ClassNotFoundException:
+            // Class org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback not found"
 
             // TODO consider allowing the user to provide their own config to allow them configuration flexibility
             conf.set("metastore.execute.setugi", "false");
@@ -460,6 +460,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                         }
                     } catch (Exception e) {
                         // catch everything else
+
                         auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(e.getMessage(), e.getCause().getMessage()));
                     } finally {
                         // stop the thread if we came out of the loop.
@@ -524,15 +525,15 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             String methodName = "refreshRepository";
             HiveMetaStoreClient client = null;
 
-                try {
-                    client = connectToHMS();
-                } catch (RepositoryErrorException cause) {
+            try {
+                client = connectToHMS();
+            } catch (RepositoryErrorException cause) {
 //                    TODO log error
-                    raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
-                } catch (TException e) {
-                    // TODO log error
-                    raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
-                }
+                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+            } catch (TException e) {
+                // TODO log error
+                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+            }
             try {
                 // Create database
                 String baseCanonicalName = catName + "::" + dbName;
@@ -580,94 +581,105 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                             DEPLOYED_DATABASE_SCHEMA,
                                             relationalDBTypeGuid,
                                             RELATIONAL_DB_SCHEMA_TYPE);
-
-                List<String> tables = client.getTables(catName, dbName, "*");
+                List<String> tables = null;
+                try {
+                    tables = client.getTables(catName, dbName, "*");
+                } catch (TException e) {
+                    auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLES_FAILED.getMessageDefinition(e.getMessage()));
+                }
 
                 if (tables != null && !tables.isEmpty()) {
                     // create each table and relationship
                     for (String tableName : tables) {
-                        Table table = client.getTable(catName, dbName, tableName);
-                        String tableType = table.getTableType();
-                        String tableCanonicalName = baseCanonicalName + "_schema_" + tableName;
+                        Table table = null;
+                        try {
+                            table = client.getTable(catName, dbName, tableName);
+                        } catch (TException e) {
+                            auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLE_FAILED.getMessageDefinition(tableName, e.getMessage()));
+                        }
+                        if (table != null) {
+                            String tableType = table.getTableType();
+                            String tableCanonicalName = baseCanonicalName + "_schema_" + tableName;
 
-                        String typeName = TABLE;
+                            String typeName = TABLE;
 
-                        EntityDetail tableEntity = getEntityDetailSkeleton(methodName,
-                                                                           TABLE,
-                                                                           tableName,
-                                                                           tableCanonicalName,
-                                                                           null,
-                                                                           true);
+                            EntityDetail tableEntity = getEntityDetailSkeleton(methodName,
+                                                                               TABLE,
+                                                                               tableName,
+                                                                               tableCanonicalName,
+                                                                               null,
+                                                                               true);
 
 //                            String owner = table.getOwner();
 //                            if (owner != null) {
 //                               TODO Can we store this on the table ?
 //                            }
-                        int createTime = table.getCreateTime();
-                        tableEntity.setCreateTime(new Date(createTime));
+                            int createTime = table.getCreateTime();
+                            tableEntity.setCreateTime(new Date(createTime));
 
-                        List<Classification> tableClassifications = tableEntity.getClassifications();
-                        if (tableClassifications == null) {
-                            tableClassifications = new ArrayList<>();
-                        }
-                        Classification classification = createTypeEmbeddedClassificationForTable(methodName, tableEntity);
-                        tableClassifications.add(classification);
-                        if (tableType.equals("VIRTUAL_VIEW")) {
-                            //Indicate that this table is a view using the classification
-                            tableClassifications.add(createCalculatedValueClassification("refreshRepository", tableEntity, table.getViewOriginalText()));
-                        }
-                        tableEntity.setClassifications(tableClassifications);
-
-                        issueSaveEntityReferenceCopy(tableEntity);
-                        String tableGuid = tableEntity.getGUID();
-                        // relationship
-
-
-                        createReferenceRelationship(ATTRIBUTE_FOR_SCHEMA,
-                                                    relationalDBTypeGuid,
-                                                    RELATIONAL_DB_SCHEMA_TYPE,
-                                                    tableGuid,
-                                                    TABLE);
-
-                        Iterator<FieldSchema> colsIterator = table.getSd().getColsIterator();
-
-                        while (colsIterator.hasNext()) {
-                            FieldSchema fieldSchema = colsIterator.next();
-                            String columnName = fieldSchema.getName();
-                            // TODO change the name for a derived column?
-
-                            EntityDetail columnEntity = getEntityDetailSkeleton(methodName,
-                                                                                COLUMN,
-                                                                                columnName,
-                                                                                tableCanonicalName + "_" + columnName,
-                                                                                null,
-                                                                                true);
-                            String dataType = fieldSchema.getType();
-
-                            List<Classification> columnClassifications = columnEntity.getClassifications();
-                            if (columnClassifications == null) {
-                                columnClassifications = new ArrayList<>();
+                            List<Classification> tableClassifications = tableEntity.getClassifications();
+                            if (tableClassifications == null) {
+                                tableClassifications = new ArrayList<>();
                             }
+                            Classification classification = createTypeEmbeddedClassificationForTable(methodName, tableEntity);
+                            tableClassifications.add(classification);
+                            if (tableType.equals("VIRTUAL_VIEW")) {
+                                //Indicate that this table is a view using the classification
+                                tableClassifications.add(createCalculatedValueClassification("refreshRepository", tableEntity, table.getViewOriginalText()));
+                            }
+                            tableEntity.setClassifications(tableClassifications);
 
-                            columnClassifications.add(createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
+                            issueSaveEntityReferenceCopy(tableEntity);
+                            String tableGuid = tableEntity.getGUID();
+                            // relationship
 
-                            columnEntity.setClassifications(columnClassifications);
-                            issueSaveEntityReferenceCopy(columnEntity);
 
-                            createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
+                            createReferenceRelationship(ATTRIBUTE_FOR_SCHEMA,
+                                                        relationalDBTypeGuid,
+                                                        RELATIONAL_DB_SCHEMA_TYPE,
                                                         tableGuid,
-                                                        typeName,
-                                                        columnEntity.getGUID(),
-                                                        COLUMN);
+                                                        TABLE);
+
+                            Iterator<FieldSchema> colsIterator = table.getSd().getColsIterator();
+
+                            while (colsIterator.hasNext()) {
+                                FieldSchema fieldSchema = colsIterator.next();
+                                String columnName = fieldSchema.getName();
+                                // TODO change the name for a derived column?
+
+                                EntityDetail columnEntity = getEntityDetailSkeleton(methodName,
+                                                                                    COLUMN,
+                                                                                    columnName,
+                                                                                    tableCanonicalName + "_" + columnName,
+                                                                                    null,
+                                                                                    true);
+                                String dataType = fieldSchema.getType();
+
+                                List<Classification> columnClassifications = columnEntity.getClassifications();
+                                if (columnClassifications == null) {
+                                    columnClassifications = new ArrayList<>();
+                                }
+
+                                columnClassifications.add(createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
+
+                                columnEntity.setClassifications(columnClassifications);
+                                issueSaveEntityReferenceCopy(columnEntity);
+
+                                createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
+                                                            tableGuid,
+                                                            typeName,
+                                                            columnEntity.getGUID(),
+                                                            COLUMN);
+                            }
                         }
                     }
                 }
-            } catch (TException | TypeErrorException e) {
-                // TODO log properly
-                System.out.println("Server error: " + e.toString());
-                e.printStackTrace();
+            } catch (TypeErrorException e) {
+                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR, methodName, e, e.getMessage());
+
             }
         }
+
 
         /**
          * Create Connection orientated entities. an Asset can be associated with a Connection,
@@ -1031,7 +1043,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         repositoryHelper.addClassificationToEntity(apiName, entity, classification, methodName);
         return classification;
 
-   }
+    }
 
     /**
      * {@inheritDoc}
