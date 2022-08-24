@@ -108,7 +108,7 @@ dependencies {
     compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
     compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
 
-    implementation 'org.apache.thrift:libthrift:0.13.0'
+    implementation 'org.apache.thrift:libthrift:0.16.0'
 
     // Standard version
     implementation 'org.apache.hive:hive-standalone-metastore:3.1.3'
