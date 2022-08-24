@@ -78,7 +78,7 @@ ext {
     jacksonVersion = '2.13.2'
     jupiterVersion = '5.8.2'
     httpclientVersion = '4.5.13'
-    springwebVersion = '5.3.19'
+    springwebVersion = '5.3.22'
     hiveversion = '3.1.3'
 }
 
