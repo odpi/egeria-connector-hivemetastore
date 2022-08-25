@@ -408,20 +408,23 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
          */
         private List<String> updateRelationshipAndEntityLists(String relationshipTypeName, String startEntityGUID, List<EntityDetail> entityList, List<Relationship> relationshipList) throws ConnectorCheckedException {
             String methodName = "updateRelationshipAndEntityLists";
-
             List<String> otherEndGuids = new ArrayList<>();
             TypeDefSummary typeDefSummary = repositoryHelper.getTypeDefByName(methodName, relationshipTypeName);
+
             String relationshipTypeGUID = typeDefSummary.getGUID();
             List<Relationship> connectorConnectorTypeRelationships = getRelationshipsForEntityHelper(startEntityGUID, relationshipTypeGUID);
-            for (Relationship relationship : connectorConnectorTypeRelationships) {
-                EntityProxy proxy = repositoryHelper.getOtherEnd(methodName,
-                                                                 startEntityGUID,
-                                                                 relationship);
-                String guid = proxy.getGUID();
-                EntityDetail otherEndEntity = getEntityDetail(guid);
-                entityList.add(otherEndEntity);
-                relationshipList.add(relationship);
-                otherEndGuids.add(otherEndEntity.getGUID());
+
+            if (connectorConnectorTypeRelationships !=null) {
+                for (Relationship relationship : connectorConnectorTypeRelationships) {
+                    EntityProxy proxy = repositoryHelper.getOtherEnd(methodName,
+                                                                     startEntityGUID,
+                                                                     relationship);
+                    String guid = proxy.getGUID();
+                    EntityDetail otherEndEntity = getEntityDetail(guid);
+                    entityList.add(otherEndEntity);
+                    relationshipList.add(relationship);
+                    otherEndGuids.add(otherEndEntity.getGUID());
+                }
             }
             return otherEndGuids;
 
@@ -453,15 +456,33 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
 
                     } catch (ConnectorCheckedException e) {
-                        if (e.getCause() == null) {
-                            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION.getMessageDefinition(e.getMessage()));
+                        String msg = "No Exception message";
+                        if (e.getMessage() !=null) {
+                            msg=e.getMessage();
+                        }
+                        Throwable cause = e.getCause();
+                        if (cause == null) {
+                            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION.getMessageDefinition(msg));
                         } else {
-                            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(e.getMessage(), e.getCause().getMessage()));
+                            String causeMsg = "No cause message";
+                            if (cause.getMessage() != null) {
+                                causeMsg = cause.getMessage();
+                            }
+                            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(msg, causeMsg));
                         }
                     } catch (Exception e) {
+                        Throwable cause = e.getCause();
                         // catch everything else
+                        String msg = "No Exception message";
+                        if (e.getMessage() !=null) {
+                            msg=e.getMessage();
+                        }
+                        String causeMsg = "No cause message";
+                        if (cause.getMessage() != null) {
+                            causeMsg = cause.getMessage();
+                        }
 
-                        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(e.getMessage(), e.getCause().getMessage()));
+                        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(msg, causeMsg));
                     } finally {
                         // stop the thread if we came out of the loop.
                         this.stop();
@@ -914,7 +935,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             InstanceProperties initialProperties = repositoryHelper.addStringPropertyToInstance(methodName,
                                                                                                 null,
                                                                                                 "name",
-                                                                                                qualifiedNamePrefix + name,
+                                                                                                name,
                                                                                                 methodName);
             initialProperties = repositoryHelper.addStringPropertyToInstance(methodName,
                                                                              initialProperties,
