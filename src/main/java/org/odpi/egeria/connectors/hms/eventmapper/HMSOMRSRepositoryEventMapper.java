@@ -704,9 +704,9 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                 if (sendEntitiesForSchemaType) {
                                     // add schema type entity
                                     EntityDetail columnEntityType = getEntityDetailSkeleton(methodName,
-                                            COLUMN,
+                                            RELATIONAL_COLUMN_TYPE,
                                             columnName + "_type",
-                                            tableCanonicalName + "_type",
+                                            tableCanonicalName + "_" + columnName + "_type",
                                             null,
                                             true);
                                     if (dataType != null ) {
