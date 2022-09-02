@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * This class is an implementation of an OMRS event mapper, it polls for content in Hive metastore and puts
  * that content into an embedded Egeria repository. It then (if configured to send batch events) extracts the entities and relationships
- * from the embedded repository and sends a batchd event for
+ * from the embedded repository and sends a batch event for
  * 1) for the asset Entities and relationships
  * 2) for each RelationalTable, it's RelationalColumns and associated relationships
  */
@@ -63,6 +63,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
     private static final String COLUMN = "RelationalColumn";
 
     private static final String RELATIONAL_TABLE_TYPE = "RelationalTableType";
+
+    private static final String SCHEMA_ATTRIBUTE_TYPE = "SchemaAttributeType";
 
     private static final String RELATIONAL_COLUMN_TYPE = "RelationalColumnType";
     // relationship
@@ -125,6 +127,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             ATTRIBUTE_FOR_SCHEMA,
             NESTED_SCHEMA_ATTRIBUTE,
             DATA_CONTENT_FOR_DATASET,
+            SCHEMA_ATTRIBUTE_TYPE,
             // classification types
             TYPE_EMBEDDED_ATTRIBUTE,
             CALCULATED_VALUE
@@ -137,7 +140,10 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
     private boolean sendPollEvents = false;
 
+    private boolean configuredSendEntitiesForSchemaType = false;
+
     private boolean useSSL = false;
+    private boolean sendEntitiesForSchemaType = false;
 
     private String configuredEndpointAddress = null;
 
@@ -266,11 +272,17 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         if (configuredSendPollEvents != null) {
             sendPollEvents = configuredSendPollEvents;
         }
-        Boolean configuredSUseSSL = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.USE_SSL);
-        if (configuredSUseSSL != null) {
-            useSSL = configuredSUseSSL;
+        Boolean configuredUseSSL = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.USE_SSL);
+        if (configuredUseSSL != null) {
+            useSSL = configuredUseSSL;
         }
-        configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS_PREFIX);
+        configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS);
+
+        Boolean configuredSendEntitiesForSchemaType = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.SEND_SCHEMA_TYPES_AS_ENTITIES);
+        if (configuredSendEntitiesForSchemaType != null) {
+            sendEntitiesForSchemaType = true;
+        }
+
     }
 
 
@@ -372,7 +384,12 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                             List<String> relationalTableGuids = updateRelationshipAndEntityLists(ATTRIBUTE_FOR_SCHEMA, relationalDBSchemaTypeGuid, tableEntityList, tableRelationshipList);
                             if (relationalTableGuids != null && relationalTableGuids.size() > 0) {
                                 for (String relationalTableGuid : relationalTableGuids) {
-                                    updateRelationshipAndEntityLists(NESTED_SCHEMA_ATTRIBUTE, relationalTableGuid, tableEntityList, tableRelationshipList);
+                                    List<String> columnGuids = updateRelationshipAndEntityLists(NESTED_SCHEMA_ATTRIBUTE, relationalTableGuid, tableEntityList, tableRelationshipList);
+                                    if (sendEntitiesForSchemaType) {
+                                        for (String columnGuid : columnGuids) {
+                                            updateRelationshipAndEntityLists(SCHEMA_ATTRIBUTE_TYPE, columnGuid, tableEntityList, tableRelationshipList);
+                                        }
+                                    }
                                 }
                             }
                             issueBatchEvent(tableRelationshipList, tableEntityList);
@@ -675,17 +692,40 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                                                                     null,
                                                                                     true);
                                 String dataType = fieldSchema.getType();
+                                if (!sendEntitiesForSchemaType) {
+                                    List<Classification> columnClassifications = columnEntity.getClassifications();
+                                    if (columnClassifications == null) {
+                                        columnClassifications = new ArrayList<>();
+                                    }
 
-                                List<Classification> columnClassifications = columnEntity.getClassifications();
-                                if (columnClassifications == null) {
-                                    columnClassifications = new ArrayList<>();
+                                    columnClassifications.add(createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
+
+                                    columnEntity.setClassifications(columnClassifications);
                                 }
-
-                                columnClassifications.add(createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
-
-                                columnEntity.setClassifications(columnClassifications);
                                 issueSaveEntityReferenceCopy(columnEntity);
+                                if (sendEntitiesForSchemaType) {
+                                    // add schema type entity
+                                    EntityDetail columnEntityType = getEntityDetailSkeleton(methodName,
+                                            COLUMN,
+                                            columnName + "_type",
+                                            tableCanonicalName + "_type",
+                                            null,
+                                            true);
+                                    if (dataType != null ) {
+                                        InstanceProperties instanceProperties = new InstanceProperties();
+                                        repositoryHelper.addStringPropertyToInstance(methodName, instanceProperties, "dataType", dataType, methodName);
+                                        columnEntityType.setProperties(instanceProperties);
+                                    }
 
+                                    issueSaveEntityReferenceCopy(columnEntityType);
+
+                                    createReferenceRelationship(SCHEMA_ATTRIBUTE_TYPE,
+                                            columnEntity.getGUID(),
+                                            COLUMN,
+                                            columnEntityType.getGUID(),
+                                            RELATIONAL_COLUMN_TYPE);
+
+                                }
                                 createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
                                                             tableGuid,
                                                             typeName,
