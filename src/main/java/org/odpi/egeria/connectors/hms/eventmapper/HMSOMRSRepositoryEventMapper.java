@@ -710,7 +710,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                             null,
                                             true);
                                     if (dataType != null ) {
-                                        InstanceProperties instanceProperties = new InstanceProperties();
+                                        InstanceProperties instanceProperties = columnEntityType.getProperties();
                                         repositoryHelper.addStringPropertyToInstance(methodName, instanceProperties, "dataType", dataType, methodName);
                                         columnEntityType.setProperties(instanceProperties);
                                     }
