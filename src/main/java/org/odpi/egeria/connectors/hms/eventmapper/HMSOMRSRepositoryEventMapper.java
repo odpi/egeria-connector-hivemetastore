@@ -1096,7 +1096,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
      * @param apiName api name for diagnostics
      * @param entity entity the classification is associated with
      * @param dataType type of the column
-     * @return TypeEmbeddedClassification
+     * @return TypeEmbeddedClassification the type embedded classification
      * @throws TypeErrorException there is an error associated with the types
      */
     private Classification createTypeEmbeddedClassificationForColumn(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
@@ -1122,8 +1122,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
      * @param type the schema type name.
      * @param entity entity to apply the classification to
      * @param dataType column type if a column
-     * @return Classification
-     * @throws TypeErrorException
+     * @return the embedded type classification
+     * @throws TypeErrorException there is an error associated with the types
      */
     private Classification createTypeEmbeddedClassification(String apiName, String type, EntityDetail entity, String dataType) throws TypeErrorException {
         String methodName = "createTypeEmbeddedClassification";
