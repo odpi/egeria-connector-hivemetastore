@@ -677,7 +677,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                 EntityDetail tableEntityType = getEntityDetailSkeleton(methodName,
                                         RELATIONAL_TABLE_TYPE,
                                         tableName + "_type",
-                                        tableCanonicalName + "_type",
+                                        tableCanonicalName + "__type",
                                         null,
                                         true);
 
