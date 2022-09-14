@@ -380,10 +380,14 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                             List<Relationship> tableRelationshipList = new ArrayList<>();
                             List<EntityDetail> tableEntityList = new ArrayList<>();
                             List<String> relationalTableGuids = updateRelationshipAndEntityLists(ATTRIBUTE_FOR_SCHEMA, relationalDBSchemaTypeGuid, tableEntityList, tableRelationshipList);
+
                             if (relationalTableGuids != null && relationalTableGuids.size() > 0) {
                                 for (String relationalTableGuid : relationalTableGuids) {
                                     List<String> columnGuids = updateRelationshipAndEntityLists(NESTED_SCHEMA_ATTRIBUTE, relationalTableGuid, tableEntityList, tableRelationshipList);
                                     if (sendEntitiesForSchemaType) {
+                                        // add the table type and relationship
+                                        updateRelationshipAndEntityLists(SCHEMA_ATTRIBUTE_TYPE, relationalTableGuid, tableEntityList, tableRelationshipList);
+                                        // for each column add its column type
                                         for (String columnGuid : columnGuids) {
                                             updateRelationshipAndEntityLists(SCHEMA_ATTRIBUTE_TYPE, columnGuid, tableEntityList, tableRelationshipList);
                                         }
