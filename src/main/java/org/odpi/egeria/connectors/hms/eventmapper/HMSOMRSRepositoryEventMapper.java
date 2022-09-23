@@ -37,7 +37,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 //        implements OpenMetadataTopicListener
 {
-
+    // TODO config?
+    // this should be a natural to the technology separator character to be used to separate elements in a name.
+    public final String SEPARATOR_CHAR = ".";
     /*
      *    Open Type names
      */
@@ -376,6 +378,12 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                              *  - relational table
                              *  - relationships to columns (NESTED_SCHEMA_ATTRIBUTE)
                              *  - relationalColumns
+                             *
+                             * In the case when the sendEntitiesForSchemaType flag is on
+                             *  - the table types associated with the RelationalTable
+                             *  - the table type has the relationship to the columns not the RelationalTable
+                             *  - we also need to relate in the columntypes for the columns
+                             *
                              */
                             List<Relationship> tableRelationshipList = new ArrayList<>();
                             List<EntityDetail> tableEntityList = new ArrayList<>();
@@ -383,14 +391,20 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
                             if (relationalTableGuids != null && relationalTableGuids.size() > 0) {
                                 for (String relationalTableGuid : relationalTableGuids) {
-                                    List<String> columnGuids = updateRelationshipAndEntityLists(NESTED_SCHEMA_ATTRIBUTE, relationalTableGuid, tableEntityList, tableRelationshipList);
                                     if (sendEntitiesForSchemaType) {
-                                        // add the table type and relationship
-                                        updateRelationshipAndEntityLists(SCHEMA_ATTRIBUTE_TYPE, relationalTableGuid, tableEntityList, tableRelationshipList);
+                                           // add the table type and relationship
+                                        List<String> relationalTableTypeGuids = updateRelationshipAndEntityLists(SCHEMA_ATTRIBUTE_TYPE, relationalTableGuid, tableEntityList, tableRelationshipList);
+                                        // expect one table type
+                                        // TODO validate table type exists?
+
+                                        List<String> columnGuids = updateRelationshipAndEntityLists(ATTRIBUTE_FOR_SCHEMA, relationalTableTypeGuids.get(0), tableEntityList, tableRelationshipList);
+
                                         // for each column add its column type
                                         for (String columnGuid : columnGuids) {
                                             updateRelationshipAndEntityLists(SCHEMA_ATTRIBUTE_TYPE, columnGuid, tableEntityList, tableRelationshipList);
                                         }
+                                    } else {
+                                         updateRelationshipAndEntityLists(NESTED_SCHEMA_ATTRIBUTE, relationalTableGuid, tableEntityList, tableRelationshipList);
                                     }
                                 }
                             }
@@ -576,7 +590,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             }
             try {
                 // Create database
-                String baseCanonicalName = catName + "::" + dbName;
+                String baseCanonicalName = catName + SEPARATOR_CHAR + dbName;
                 EntityDetail databaseEntity = getEntityDetailSkeleton(methodName,
                                                                       DATABASE,
                                                                       baseCanonicalName,
@@ -591,16 +605,16 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 // create DeployedDatabaseSchema
                 EntityDetail deployedDatabaseSchemaEntity = getEntityDetailSkeleton(methodName,
                                                                                     DEPLOYED_DATABASE_SCHEMA,
-                                                                                    baseCanonicalName + "_schema",
-                                                                                    baseCanonicalName + "_schema",
+                                                                                    baseCanonicalName + SEPARATOR_CHAR +"schema",
+                                                                                    baseCanonicalName + SEPARATOR_CHAR +"schema",
                                                                                     null,
                                                                                     false);
                 issueSaveEntityReferenceCopy(deployedDatabaseSchemaEntity);
                 // create RelationalDBType
                 EntityDetail relationalDBTypeEntity = getEntityDetailSkeleton(methodName,
                                                                               RELATIONAL_DB_SCHEMA_TYPE,
-                                                                              dbName + "_schemaType",
-                                                                              baseCanonicalName + "_schemaType",
+                                                                              dbName + SEPARATOR_CHAR +"schemaType",
+                                                                              baseCanonicalName + SEPARATOR_CHAR +"schemaType",
                                                                               null,
                                                                               false);
                 issueSaveEntityReferenceCopy(relationalDBTypeEntity);
@@ -639,7 +653,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                         }
                         if (table != null) {
                             String tableType = table.getTableType();
-                            String tableCanonicalName = baseCanonicalName + "_schema_" + tableName;
+                            String tableCanonicalName = baseCanonicalName + SEPARATOR_CHAR +"schema" + SEPARATOR_CHAR + tableName;
 
                             String typeName = TABLE;
 
@@ -676,21 +690,23 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
                             issueSaveEntityReferenceCopy(tableEntity);
                             String tableGuid = tableEntity.getGUID();
+
+                            String tableTypeGUID = null; // only filled in when sendEntitiesForSchemaType = true
                             if (sendEntitiesForSchemaType) {
                                 // add schema type entity
                                 EntityDetail tableEntityType = getEntityDetailSkeleton(methodName,
                                         RELATIONAL_TABLE_TYPE,
-                                        tableName + "_type",
-                                        tableCanonicalName + "__type",
+                                        tableName + SEPARATOR_CHAR +"type",
+                                        tableCanonicalName + SEPARATOR_CHAR + SEPARATOR_CHAR + "type", // double separator to the type qualified name does not clash with an attribute qualified name
                                         null,
                                         true);
 
                                 issueSaveEntityReferenceCopy(tableEntityType);
-
+                                tableTypeGUID = tableEntityType.getGUID();
                                 createReferenceRelationship(SCHEMA_ATTRIBUTE_TYPE,
                                         tableEntity.getGUID(),
                                         TABLE,
-                                        tableEntityType.getGUID(),
+                                        tableTypeGUID,
                                         RELATIONAL_TABLE_TYPE);
                             }
 
@@ -713,7 +729,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                 EntityDetail columnEntity = getEntityDetailSkeleton(methodName,
                                                                                     COLUMN,
                                                                                     columnName,
-                                                                                    tableCanonicalName + "_" + columnName,
+                                                                                    tableCanonicalName + SEPARATOR_CHAR + columnName,
                                                                                     null,
                                                                                     true);
                                 String dataType = fieldSchema.getType();
@@ -732,8 +748,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                     // add schema type entity
                                     EntityDetail columnEntityType = getEntityDetailSkeleton(methodName,
                                             RELATIONAL_COLUMN_TYPE,
-                                            columnName + "_type",
-                                            tableCanonicalName + "_" + columnName + "_type",
+                                            columnName + SEPARATOR_CHAR + "type",
+                                            tableCanonicalName + SEPARATOR_CHAR + columnName + SEPARATOR_CHAR + "(type)",
                                             null,
                                             true);
                                     if (dataType != null ) {
@@ -743,19 +759,27 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                     }
 
                                     issueSaveEntityReferenceCopy(columnEntityType);
-
+                                    // create column to column type relationship
                                     createReferenceRelationship(SCHEMA_ATTRIBUTE_TYPE,
                                             columnEntity.getGUID(),
                                             COLUMN,
                                             columnEntityType.getGUID(),
                                             RELATIONAL_COLUMN_TYPE);
+                                    // create table type to column relationship
+                                    createReferenceRelationship(ATTRIBUTE_FOR_SCHEMA,
+                                            tableTypeGUID,
+                                            RELATIONAL_TABLE_TYPE,
+                                            columnEntity.getGUID(),
+                                            COLUMN);
 
+                                } else {
+                                    // relate the attribute to the attribute
+                                    createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
+                                            tableGuid,
+                                            typeName,
+                                            columnEntity.getGUID(),
+                                            COLUMN);
                                 }
-                                createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
-                                                            tableGuid,
-                                                            typeName,
-                                                            columnEntity.getGUID(),
-                                                            COLUMN);
                             }
                         }
                     }
@@ -779,8 +803,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
          */
         private void createConnectionOrientatedEntities(String baseCanonicalName, EntityDetail databaseEntity) throws ConnectorCheckedException {
             String methodName = "createConnectionOrientatedEntities";
-            String name = baseCanonicalName + "-connection";
-            String canonicalName = baseCanonicalName + "-connection";
+            String name = baseCanonicalName + SEPARATOR_CHAR + "connection";
+            String canonicalName = baseCanonicalName + SEPARATOR_CHAR + "connection";
 
             EntityDetail connectionEntity = getEntityDetailSkeleton(methodName,
                                                                     CONNECTION,
@@ -791,8 +815,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
             issueSaveEntityReferenceCopy(connectionEntity);
 
-            name = baseCanonicalName + "-" + CONNECTOR_TYPE;
-            canonicalName = baseCanonicalName + "-" + CONNECTOR_TYPE;
+            name = baseCanonicalName + SEPARATOR_CHAR + CONNECTOR_TYPE;
+            canonicalName = baseCanonicalName + SEPARATOR_CHAR + CONNECTOR_TYPE;
 
             EntityDetail connectionTypeEntity = getEntityDetailSkeleton(methodName,
                                                                         CONNECTOR_TYPE,
@@ -803,8 +827,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             issueSaveEntityReferenceCopy(connectionTypeEntity);
 
 
-            name = baseCanonicalName + "-" + ENDPOINT;
-            canonicalName = baseCanonicalName + "-" + ENDPOINT;
+            name = baseCanonicalName + SEPARATOR_CHAR + ENDPOINT;
+            canonicalName = name;
 
             EntityDetail endpointEntity = getEntityDetailSkeleton(methodName,
                                                                   ENDPOINT,
@@ -898,7 +922,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e);
             }
 
-            String connectionToAssetCanonicalName = end1GUID + "::" + relationshipTypeName + "::" + end2GUID;
+            String connectionToAssetCanonicalName = end1GUID + SEPARATOR_CHAR + relationshipTypeName + SEPARATOR_CHAR + end2GUID;
             String relationshipGUID = null;
             try {
                 relationshipGUID = Base64.getUrlEncoder().encodeToString(connectionToAssetCanonicalName.getBytes("UTF-8"));
@@ -1039,7 +1063,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             entityToAdd.setStatus(InstanceStatus.ACTIVE);
             // for Entities that never change there is only a need for one version.
             // Entities never change if they have no attributes other than name - we generated the qualifiedName and GUID from
-            // the name - so a change in name is a change in GUID, whcih would mean a delete then create.
+            // the name - so a change in name is a change in GUID, which would mean a delete then create.
             // For entities with properties then those properties could be updated and they require a version.
             long version = 1;
             if (generateUniqueVersion) {
