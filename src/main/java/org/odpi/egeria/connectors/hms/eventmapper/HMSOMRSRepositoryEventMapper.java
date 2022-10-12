@@ -8,19 +8,23 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.thrift.TException;
+import org.odpi.egeria.connectors.hms.ConnectorColumn;
+import org.odpi.egeria.connectors.hms.ConnectorTable;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
+import org.odpi.egeria.connectors.hms.helpers.MapperHelper;
+import org.odpi.egeria.connectors.hms.helpers.SupportedTypes;
+import org.odpi.egeria.connectors.hms.helpers.ExceptionHelper;
+import org.odpi.egeria.connectors.hms.repository.CachedRepositoryAccessor;
 import org.odpi.egeria.connectors.hms.repositoryconnector.CachingOMRSRepositoryProxyConnector;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedException;
 import org.odpi.openmetadata.frameworks.connectors.properties.EndpointProperties;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.OMRSMetadataCollection;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.*;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDef;
-import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDefSummary;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryeventmapper.OMRSRepositoryEventMapperBase;
 import org.odpi.openmetadata.repositoryservices.ffdc.exception.*;
 
-import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,44 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 //        implements OpenMetadataTopicListener
 {
-    // TODO config?
-    // this should be a natural to the technology separator character to be used to separate elements in a name.
-    public final String SEPARATOR_CHAR = ".";
-    /*
-     *    Open Type names
-     */
-    private static final String CONNECTION = "Connection";
-    private static final String CONNECTOR_TYPE = "ConnectorType";
-    private static final String ENDPOINT = "Endpoint";
-    private static final String CONNECTION_ENDPOINT = "ConnectionEndpoint";
-    private static final String CONNECTION_CONNECTOR_TYPE = "ConnectionConnectorType";
-    private static final String CONNECTION_TO_ASSET = "ConnectionToAsset";
-
-    private static final String DATABASE = "Database";
-    private static final String DEPLOYED_DATABASE_SCHEMA = "DeployedDatabaseSchema";
-    private static final String RELATIONAL_DB_SCHEMA_TYPE = "RelationalDBSchemaType";
-    // relationship
-    private static final String DATA_CONTENT_FOR_DATASET = "DataContentForDataSet";
-    // relationship
-    private static final String ASSET_SCHEMA_TYPE = "AssetSchemaType";
-    //relationship
-    private static final String ATTRIBUTE_FOR_SCHEMA = "AttributeForSchema";
-
-    private static final String TABLE = "RelationalTable";
-
-    private static final String COLUMN = "RelationalColumn";
-
-    private static final String RELATIONAL_TABLE_TYPE = "RelationalTableType";
-
-    private static final String SCHEMA_ATTRIBUTE_TYPE = "SchemaAttributeType";
-
-    private static final String RELATIONAL_COLUMN_TYPE = "RelationalColumnType";
-    // relationship
-    private static final String NESTED_SCHEMA_ATTRIBUTE = "NestedSchemaAttribute";
-    // classification
-    private static final String TYPE_EMBEDDED_ATTRIBUTE = "TypeEmbeddedAttribute";
-
-    private static final String CALCULATED_VALUE = "CalculatedValue";
 
 
     /**
@@ -101,40 +67,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
     protected OMRSMetadataCollection metadataCollection = null;
 
     private String repositoryName = null;
-
-    final List<String> supportedTypeNames = Arrays.asList(new String[]{
-            // entity types
-            "Asset", // super type of Database
-            "Referenceable", // super type of the others
-            "OpenMetadataRoot", // super type of referenceable
-            "SchemaAttribute",
-            "SchemaElement",
-            "ComplexSchemaType",
-            "SchemaType",
-
-            CONNECTION,
-            CONNECTOR_TYPE,
-            ENDPOINT,
-            RELATIONAL_TABLE_TYPE,
-            RELATIONAL_COLUMN_TYPE,
-            DATABASE,
-            RELATIONAL_DB_SCHEMA_TYPE,
-            TABLE,
-            COLUMN,
-            // relationship types
-            CONNECTION_ENDPOINT,
-            CONNECTION_CONNECTOR_TYPE,
-            CONNECTION_TO_ASSET,
-            ASSET_SCHEMA_TYPE,
-            ATTRIBUTE_FOR_SCHEMA,
-            NESTED_SCHEMA_ATTRIBUTE,
-            DATA_CONTENT_FOR_DATASET,
-            SCHEMA_ATTRIBUTE_TYPE,
-            // classification types
-            TYPE_EMBEDDED_ATTRIBUTE,
-            CALCULATED_VALUE
-    });
-
     private String catName = "spark";
     private String dbName = "default";
     private String metadata_store_userId = null;
@@ -149,21 +81,28 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
     private PollingThread pollingThread;
     private String databaseGUID;
+    private final String className = this.getClass().getName();
 
     /**
      * Default constructor
      */
     public HMSOMRSRepositoryEventMapper() {
         super();
-//        this.sourceName = "HMSOMRSRepositoryEventMapper";
     }
 
+    /**
+     * Connect to Hive Meta Store using the configuration parameters
+     *
+     * @return the client - which we can use to access HMS content including the tables
+     * @throws TException Thrift Exception
+     * @throws RepositoryErrorException repository error
+     */
     private HiveMetaStoreClient connectToHMS() throws TException, RepositoryErrorException {
         String methodName = "connectToHMS";
         HiveMetaStoreClient client = null;
         EndpointProperties endpointProperties = connectionProperties.getEndpoint();
         if (endpointProperties == null) {
-            raiseRepositoryErrorException(HMSOMRSErrorCode.ENDPOINT_NOT_SUPPLIED_IN_CONFIG, methodName, null, "null");
+            ExceptionHelper.raiseRepositoryErrorException(className, HMSOMRSErrorCode.ENDPOINT_NOT_SUPPLIED_IN_CONFIG, methodName, null, "null");
         } else {
             // populate the Hive configuration for the HMS client.
             Configuration conf = new Configuration();
@@ -210,7 +149,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_STARTING.getMessageDefinition());
 
         if (!(repositoryConnector instanceof CachingOMRSRepositoryProxyConnector)) {
-            raiseConnectorCheckedException(HMSOMRSErrorCode.EVENT_MAPPER_IMPROPERLY_INITIALIZED, methodName, null, repositoryConnector.getServerName());
+            ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.EVENT_MAPPER_IMPROPERLY_INITIALIZED, methodName, null, repositoryConnector.getServerName());
         }
 
         this.repositoryHelper = this.repositoryConnector.getRepositoryHelper();
@@ -229,12 +168,22 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             try {
                 connectToHMS();
             } catch (RepositoryErrorException | TException cause) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+                ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
             }
         }
 
         this.pollingThread = new PollingThread();
         pollingThread.start();
+    }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    synchronized public void disconnect() throws ConnectorCheckedException {
+        super.disconnect();
+        final String methodName = "disconnect";
+        pollingThread.stop();
+        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
     }
 
     /**
@@ -287,15 +236,33 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
 
     /**
-     * Class to poll for file content
+     * Class to poll for Hive Meta store content
      */
-    private class PollingThread implements Runnable {
+    public class PollingThread implements Runnable {
         Thread worker = null;
+        List<Relationship> aboveTableRelationshipListToStore = new ArrayList<>();
+        List<EntityDetail> aboveTableEntityListToStore = new ArrayList<>();
+        Map<String, List<EntityDetail>> qualifiedTableNameToEntityMap = new HashMap<>();
+        Map<String, List<Relationship>> qualifiedTableNameToRelationshipMap = new HashMap<>();
 
+        CachedRepositoryAccessor cachedRepositoryAccessor = null;
+        String baseCanonicalName = null;
+
+        String relationalDBTypeGuid = null;
+
+        MapperHelper mapperHelper = null;
+
+        /**
+         * Start the thread
+         */
         void start() {
             Thread worker = new Thread(this);
             worker.start();
         }
+
+        /**
+         * Stop the thread
+         */
 
         void stop() {
             if (!running.compareAndSet(true, false)) {
@@ -303,165 +270,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             }
         }
 
-        private List<Relationship> getRelationshipsForEntityHelper(
-                String entityGUID,
-                String relationshipTypeGUID) throws ConnectorCheckedException {
-            String methodName = "getRelationshipsForEntityHelper";
-            List<Relationship> relationships = null;
-            try {
-                relationships = metadataCollection.getRelationshipsForEntity(userId, entityGUID, relationshipTypeGUID, 0, null, null, null, null, 0);
-            } catch (InvalidParameterException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (RepositoryErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.REPOSITORY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (TypeErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (PropertyErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.PROPERTY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (PagingErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.PAGING_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (FunctionNotSupportedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.FUNCTION_NOT_SUPPORTED_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (UserNotAuthorizedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.USER_NOT_AUTHORIZED_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (EntityNotKnownException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.ENTITY_NOT_KNOWN, methodName, e, repositoryConnector.getServerName(), methodName, entityGUID);
-            }
-            return relationships;
-        }
-
-        private EntityDetail getEntityDetail(String guid) throws ConnectorCheckedException {
-            String methodName = "getEntityDetail";
-            EntityDetail entityDetail = null;
-            try {
-                entityDetail = metadataCollection.getEntityDetail(userId, guid);
-            } catch (InvalidParameterException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (RepositoryErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.REPOSITORY_ERROR_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (UserNotAuthorizedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.USER_NOT_AUTHORIZED_EXCEPTION, methodName, e, repositoryConnector.getServerName(), methodName);
-            } catch (EntityNotKnownException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.ENTITY_NOT_KNOWN, methodName, e, repositoryConnector.getServerName(), methodName, guid);
-            } catch (EntityProxyOnlyException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.ENTITY_PROXY_ONLY, methodName, e, repositoryConnector.getServerName(), methodName, guid);
-            }
-            return entityDetail;
-
-
-        }
-
-        void sendBatchEvent() throws ConnectorCheckedException {
-            EntityDetail databaseEntity = getEntityDetail(databaseGUID);
-            List<Relationship> relationshipList = new ArrayList<>();
-            List<EntityDetail> entityList = new ArrayList<>();
-            entityList.add(databaseEntity);
-
-            List<String> connectionGuids = updateRelationshipAndEntityLists(CONNECTION_TO_ASSET, databaseGUID, entityList, relationshipList);
-            if (connectionGuids != null && connectionGuids.size() > 0) {
-                for (String connectionGUID : connectionGuids) {
-                    updateRelationshipAndEntityLists(CONNECTION_CONNECTOR_TYPE, connectionGUID, entityList, relationshipList);
-                    updateRelationshipAndEntityLists(CONNECTION_ENDPOINT, connectionGUID, entityList, relationshipList);
-                }
-            }
-            List<String> deployedDatabaseSchemaGuids = updateRelationshipAndEntityLists(ASSET_SCHEMA_TYPE, databaseGUID, entityList, relationshipList);
-
-            if (deployedDatabaseSchemaGuids != null && deployedDatabaseSchemaGuids.size() > 0) {
-                for (String deployedDatabaseSchemaGuid : deployedDatabaseSchemaGuids) {
-                    List<String> relationalDBSchemaTypeGuids = updateRelationshipAndEntityLists(DATA_CONTENT_FOR_DATASET, deployedDatabaseSchemaGuid, entityList, relationshipList);
-                    issueBatchEvent(relationshipList, entityList);
-
-                    if (relationalDBSchemaTypeGuids != null && relationalDBSchemaTypeGuids.size() > 0) {
-                        for (String relationalDBSchemaTypeGuid : relationalDBSchemaTypeGuids) {
-                            /* for each relationalTable send a separate batch event with
-                             *  - relationship to relationalTable (ATTRIBUTE_FOR_SCHEMA)
-                             *  - relational table
-                             *  - relationships to columns (NESTED_SCHEMA_ATTRIBUTE)
-                             *  - relationalColumns
-                             *
-                             * In the case when the sendEntitiesForSchemaType flag is on
-                             *  - the table types associated with the RelationalTable
-                             *  - the table type has the relationship to the columns not the RelationalTable
-                             *  - we also need to relate in the columntypes for the columns
-                             *
-                             */
-                            List<Relationship> tableRelationshipList = new ArrayList<>();
-                            List<EntityDetail> tableEntityList = new ArrayList<>();
-                            List<String> relationalTableGuids = updateRelationshipAndEntityLists(ATTRIBUTE_FOR_SCHEMA, relationalDBSchemaTypeGuid, tableEntityList, tableRelationshipList);
-
-                            if (relationalTableGuids != null && relationalTableGuids.size() > 0) {
-                                for (String relationalTableGuid : relationalTableGuids) {
-                                    if (sendEntitiesForSchemaType) {
-                                           // add the table type and relationship
-                                        List<String> relationalTableTypeGuids = updateRelationshipAndEntityLists(SCHEMA_ATTRIBUTE_TYPE, relationalTableGuid, tableEntityList, tableRelationshipList);
-                                        // expect one table type
-                                        // TODO validate table type exists?
-
-                                        List<String> columnGuids = updateRelationshipAndEntityLists(ATTRIBUTE_FOR_SCHEMA, relationalTableTypeGuids.get(0), tableEntityList, tableRelationshipList);
-
-                                        // for each column add its column type
-                                        for (String columnGuid : columnGuids) {
-                                            updateRelationshipAndEntityLists(SCHEMA_ATTRIBUTE_TYPE, columnGuid, tableEntityList, tableRelationshipList);
-                                        }
-                                    } else {
-                                         updateRelationshipAndEntityLists(NESTED_SCHEMA_ATTRIBUTE, relationalTableGuid, tableEntityList, tableRelationshipList);
-                                    }
-                                }
-                            }
-                            issueBatchEvent(tableRelationshipList, tableEntityList);
-                        }
-                    }
-                }
-            }
-        }
-
-        private void issueBatchEvent(List<Relationship> relationshipList, List<EntityDetail> entityList) {
-            InstanceGraph instances = new InstanceGraph(entityList, relationshipList);
-
-            // send the event
-            repositoryEventProcessor.processInstanceBatchEvent("HMSOMRSRepositoryEventMapper",
-                                                               repositoryConnector.getMetadataCollectionId(),
-                                                               repositoryConnector.getServerName(),
-                                                               repositoryConnector.getServerType(),
-                                                               repositoryConnector.getOrganizationName(),
-                                                               instances);
-        }
-
-        /**
-         * This method is passed an entity guid and a relationship type name, it gets the relationships based on the name and
-         * entity guid. A list of relationships is found, for each relationship we add the relationship to the
-         * relationship list and the entity at the other end to the entity list.
-         *
-         * @param relationshipTypeName - type of the relationships or entity
-         * @param startEntityGUID      - entity guid of the end we know
-         * @param entityList           - the list of entities to update
-         * @param relationshipList     - the list of relationships to update
-         * @return a list of the guids of the other end entities
-         * @throws ConnectorCheckedException error getting the relationships
-         */
-        private List<String> updateRelationshipAndEntityLists(String relationshipTypeName, String startEntityGUID, List<EntityDetail> entityList, List<Relationship> relationshipList) throws ConnectorCheckedException {
-            String methodName = "updateRelationshipAndEntityLists";
-            List<String> otherEndGuids = new ArrayList<>();
-            TypeDefSummary typeDefSummary = repositoryHelper.getTypeDefByName(methodName, relationshipTypeName);
-
-            String relationshipTypeGUID = typeDefSummary.getGUID();
-            List<Relationship> connectorConnectorTypeRelationships = getRelationshipsForEntityHelper(startEntityGUID, relationshipTypeGUID);
-
-            if (connectorConnectorTypeRelationships !=null) {
-                for (Relationship relationship : connectorConnectorTypeRelationships) {
-                    EntityProxy proxy = repositoryHelper.getOtherEnd(methodName,
-                                                                     startEntityGUID,
-                                                                     relationship);
-                    String guid = proxy.getGUID();
-                    EntityDetail otherEndEntity = getEntityDetail(guid);
-                    entityList.add(otherEndEntity);
-                    relationshipList.add(relationship);
-                    otherEndGuids.add(otherEndEntity.getGUID());
-                }
-            }
-            return otherEndGuids;
-
-        }
         @Override
         public void run() {
 
@@ -469,13 +277,48 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             if (running.compareAndSet(false, true)) {
                 while (running.get()) {
                     try {
+
+                        mapperHelper = new MapperHelper(repositoryHelper,
+                                userId,
+                                metadataCollectionId,
+                                repositoryName,
+                                metadataCollectionName,qualifiedNamePrefix);
+
                         getRequiredTypes();
                         // call the repository connector to refresh its contents.
-                        refreshRepository();
-                        // send the batch event per asset
-                        if (sendPollEvents) {
-                            sendBatchEvent();
+
+                        HiveMetaStoreClient client = null;
+
+                        try {
+                            client = connectToHMS();
+                        } catch (RepositoryErrorException cause) {
+                            //                    TODO log error
+                            ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+                        } catch (TException e) {
+                            // TODO log error
+                            ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
                         }
+                        // reset the variables used to accumulate state
+                        cachedRepositoryAccessor = new CachedRepositoryAccessor(userId, repositoryConnector.getServerName(), metadataCollection);
+                        aboveTableEntityListToStore = new ArrayList<>();
+                        aboveTableRelationshipListToStore = new ArrayList<>();
+                        qualifiedTableNameToEntityMap = new HashMap<>();
+                        qualifiedTableNameToRelationshipMap = new HashMap<>();
+
+                        // populate the above lists with the database and schema entities and relationships
+
+                        baseCanonicalName = catName + SupportedTypes.SEPARATOR_CHAR + dbName;
+                        // collect the entities and relationships above the table(s) 
+                        collectEntitiesAndRelationshipsAboveTable();
+
+                        // create ConnectionTables. This method uses the Hive client.
+                        // In the future if this event mapper is copied for other technologies - this is the method that needs to be reworking to 
+                        // use the new technology
+                        List<ConnectorTable> connectorTables = getConnectionTablesAndColumnsFromHMS(client);
+                        // Subsequent processing is not Hive specific. 
+                        convertToConnectorTablesToEntitiesAndRelationships(connectorTables);
+                        refreshRepositoryAndSendBatchEvent();
+
                         //  wait the polling interval.
                         auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_PRE_WAIT.getMessageDefinition());
                         try {
@@ -490,8 +333,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
                     } catch (ConnectorCheckedException e) {
                         String msg = "No Exception message";
-                        if (e.getMessage() !=null) {
-                            msg=e.getMessage();
+                        if (e.getMessage() != null) {
+                            msg = e.getMessage();
                         }
                         Throwable cause = e.getCause();
                         if (cause == null) {
@@ -507,8 +350,8 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                         Throwable cause = e.getCause();
                         // catch everything else
                         String msg = "No Exception message";
-                        if (e.getMessage() !=null) {
-                            msg=e.getMessage();
+                        if (e.getMessage() != null) {
+                            msg = e.getMessage();
                         }
                         String causeMsg = "No cause message";
                         if (cause.getMessage() != null) {
@@ -524,10 +367,150 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             }
         }
 
+        /**
+         * Collect the Entities and relationships above the tables(s)
+         *
+         * @throws ConnectorCheckedException connector exception
+         */
+        private void collectEntitiesAndRelationshipsAboveTable() throws ConnectorCheckedException {
+            String methodName = "collectEntitiesAndRelationshipsAboveTable";
 
+            // Create database
+
+            EntityDetail databaseEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                    SupportedTypes.DATABASE,
+                    baseCanonicalName,
+                    baseCanonicalName,
+                    null,
+                    false);
+            databaseGUID = databaseEntity.getGUID();
+            saveEntityReferenceCopy(databaseEntity);
+
+            createConnectionOrientatedEntities(baseCanonicalName, databaseEntity);
+
+            // create DeployedDatabaseSchema
+            EntityDetail deployedDatabaseSchemaEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA,
+                    baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "schema",
+                    baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "schema",
+                    null,
+                    false);
+            saveEntityReferenceCopy(deployedDatabaseSchemaEntity);
+            // create RelationalDBType
+            EntityDetail relationalDBTypeEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                    SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,
+                    dbName + SupportedTypes.SEPARATOR_CHAR + "schemaType",
+                    baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "schemaType",
+                    null,
+                    false);
+            saveEntityReferenceCopy(relationalDBTypeEntity);
+
+            // create Relationships
+            String deployedDatabaseSchemaGuid = deployedDatabaseSchemaEntity.getGUID();
+            relationalDBTypeGuid = relationalDBTypeEntity.getGUID();
+            // create the 2 relationships
+
+            aboveTableRelationshipListToStore.add(mapperHelper.createReferenceRelationship(SupportedTypes.ASSET_SCHEMA_TYPE,
+                    databaseGUID,
+                    SupportedTypes.DATABASE,
+                    deployedDatabaseSchemaGuid,
+                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA));
+
+            aboveTableRelationshipListToStore.add(mapperHelper.createReferenceRelationship(SupportedTypes.DATA_CONTENT_FOR_DATASET,
+                    deployedDatabaseSchemaGuid,
+                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA,
+                    relationalDBTypeGuid,
+                    SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE));
+        }
+
+        /**
+         * refresh the repository with the entities and relationships and then send batch events, one per table and then one for the other entities and relationships above the table
+         *
+         * @throws ConnectorCheckedException connector exception
+         */
+        private void refreshRepositoryAndSendBatchEvent() throws ConnectorCheckedException {
+            refreshRepositoryAndSendBatchEventForAboveTable();
+            refreshRepositoryAndSendBatchEventForEachTable();
+        }
+
+        /**
+         * refresh the repository with the entities and relationships and then send batch events, above the tables
+         *
+         * @throws ConnectorCheckedException connector exception
+         */
+        private void refreshRepositoryAndSendBatchEventForAboveTable() throws ConnectorCheckedException {
+            List<String> entityGUIDs = new ArrayList<>();
+            List<String> relationshipGUIDs = new ArrayList<>();
+            // above table entities and relationships
+            for (EntityDetail entity : aboveTableEntityListToStore) {
+                cachedRepositoryAccessor.saveEntityReferenceCopyToStore(entity);
+                entityGUIDs.add(entity.getGUID());
+            }
+            for (Relationship relationship : aboveTableRelationshipListToStore) {
+                cachedRepositoryAccessor.saveRelationshipReferenceCopyToStore(relationship);
+                relationshipGUIDs.add(relationship.getGUID());
+            }
+            // get the entities and relationships from the repository
+            List<Relationship> relationshipList = new ArrayList<>();
+            List<EntityDetail> entityList = new ArrayList<>();
+            for (String guid : entityGUIDs) {
+                entityList.add(cachedRepositoryAccessor.getEntityDetailFromStore(guid));
+            }
+            for (String guid : relationshipGUIDs) {
+                relationshipList.add(cachedRepositoryAccessor.getRelationshipFromStore(guid));
+            }
+
+            if (sendPollEvents) {
+                issueBatchEvent(relationshipList, entityList);
+            }
+
+        }
+
+        /**
+         * refresh the repository with the entities and relationships and then send batch events, for each table
+         *
+         * @throws ConnectorCheckedException connector exception
+         */
+        private void refreshRepositoryAndSendBatchEventForEachTable() throws ConnectorCheckedException {
+            for (String qualifiedName : qualifiedTableNameToEntityMap.keySet()) {
+                List<String> entityGUIDs = new ArrayList<>();
+                List<String> relationshipGUIDs = new ArrayList<>();
+                List<EntityDetail> entities = qualifiedTableNameToEntityMap.get(qualifiedName);
+                List<Relationship> relationships = qualifiedTableNameToRelationshipMap.get(qualifiedName);
+                for (EntityDetail entity : entities) {
+                    cachedRepositoryAccessor.saveEntityReferenceCopyToStore(entity);
+                    entityGUIDs.add(entity.getGUID());
+                }
+                for (Relationship relationship : relationships) {
+                    cachedRepositoryAccessor.saveRelationshipReferenceCopyToStore(relationship);
+                    relationshipGUIDs.add(relationship.getGUID());
+                }
+                // get the entities and relationships from the repository
+                List<Relationship> relationshipList = new ArrayList<>();
+                List<EntityDetail> entityList = new ArrayList<>();
+
+                for (String guid : entityGUIDs) {
+                    entityList.add(cachedRepositoryAccessor.getEntityDetailFromStore(guid));
+                }
+                for (String guid : relationshipGUIDs) {
+                    relationshipList.add(cachedRepositoryAccessor.getRelationshipFromStore(guid));
+                }
+
+                if (sendPollEvents) {
+                    issueBatchEvent(relationshipList, entityList);
+                }
+            }
+        }
+
+        /**
+         * Check that the repository supports the required types. This is done in a loop with small delays as the types are added asynchonously, so we need to loop until we get the
+         * required types
+         *
+         * @throws ConnectorCheckedException connector exception
+         */
         private void getRequiredTypes() throws ConnectorCheckedException {
             String methodName = "getRequiredTypes";
-            final int supportedCount = supportedTypeNames.size();
+            final int supportedCount = SupportedTypes.supportedTypeNames.size();
 
             int typesAvailableCount = 0;
             int retryCount = 0;
@@ -539,10 +522,10 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                     typeNameToGuidMap = new HashMap<>();
                 }
                 // populate the type name to guid map
-                for (String typeName : supportedTypeNames) {
+                for (String typeName : SupportedTypes.supportedTypeNames) {
 
                     TypeDef typeDef = repositoryHelper.getTypeDefByName("HMSOMRSRepositoryEventMapper",
-                                                                        typeName);
+                            typeName);
                     if (typeDef != null) {
                         auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRING_TYPES_LOOP_FOUND_TYPE.getMessageDefinition(typeName));
                         typeNameToGuidMap.put(typeName, typeDef.getGUID());
@@ -570,224 +553,231 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                 }
 
                 if (retryCount == 20) { // TODO  Should this be in configuration?
-                    raiseConnectorCheckedException(HMSOMRSErrorCode.EVENT_MAPPER_CANNOT_GET_TYPES, methodName, null);
+                    ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.EVENT_MAPPER_CANNOT_GET_TYPES, methodName, null);
                 }
             }
         }
 
-        public void refreshRepository() throws ConnectorCheckedException {
+        /**
+         * this method issues the HMS client calls to get the table content
+         *
+         * @param client HMS client used to call HMS
+         * @return a list of Connector tables
+         * @throws ConnectorCheckedException connector checked exception
+         */
+        public List<ConnectorTable> getConnectionTablesAndColumnsFromHMS(HiveMetaStoreClient client) throws ConnectorCheckedException {
             String methodName = "refreshRepository";
-            HiveMetaStoreClient client = null;
+            List<ConnectorTable> connectorTables = new ArrayList<>();
+            List<String> tableNames = new ArrayList<>();
 
             try {
-                client = connectToHMS();
-            } catch (RepositoryErrorException cause) {
-//                    TODO log error
-                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+                tableNames = client.getTables(catName, dbName, "*");
             } catch (TException e) {
-                // TODO log error
-                raiseConnectorCheckedException(HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+                auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLES_FAILED.getMessageDefinition(e.getMessage()));
             }
-            try {
-                // Create database
-                String baseCanonicalName = catName + SEPARATOR_CHAR + dbName;
-                EntityDetail databaseEntity = getEntityDetailSkeleton(methodName,
-                                                                      DATABASE,
-                                                                      baseCanonicalName,
-                                                                      baseCanonicalName,
-                                                                      null,
-                                                                      false);
-                databaseGUID = databaseEntity.getGUID();
-                issueSaveEntityReferenceCopy(databaseEntity);
 
-                createConnectionOrientatedEntities(baseCanonicalName, databaseEntity);
+            if (tableNames != null && !tableNames.isEmpty()) {
+                // create each table and relationship
+                for (String tableName : tableNames) {
+                    Table hmsTable = null;
+                    try {
+                        hmsTable = client.getTable(catName, dbName, tableName);
+                    } catch (TException e) {
+                        auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLE_FAILED.getMessageDefinition(tableName, e.getMessage()));
+                    }
+                    if (hmsTable != null) {
+                        ConnectorTable connectorTable = getTableFromHMSTable(baseCanonicalName, hmsTable);
+                        Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
 
-                // create DeployedDatabaseSchema
-                EntityDetail deployedDatabaseSchemaEntity = getEntityDetailSkeleton(methodName,
-                                                                                    DEPLOYED_DATABASE_SCHEMA,
-                                                                                    baseCanonicalName + SEPARATOR_CHAR +"schema",
-                                                                                    baseCanonicalName + SEPARATOR_CHAR +"schema",
-                                                                                    null,
-                                                                                    false);
-                issueSaveEntityReferenceCopy(deployedDatabaseSchemaEntity);
-                // create RelationalDBType
-                EntityDetail relationalDBTypeEntity = getEntityDetailSkeleton(methodName,
-                                                                              RELATIONAL_DB_SCHEMA_TYPE,
-                                                                              dbName + SEPARATOR_CHAR +"schemaType",
-                                                                              baseCanonicalName + SEPARATOR_CHAR +"schemaType",
-                                                                              null,
-                                                                              false);
-                issueSaveEntityReferenceCopy(relationalDBTypeEntity);
+                        while (colsIterator.hasNext()) {
+                            FieldSchema fieldSchema = colsIterator.next();
+                            String columnName = fieldSchema.getName();
+                            String dataType = fieldSchema.getType();
 
-                // create Relationships
-                String databaseGuid = databaseEntity.getGUID();
-                String deployedDatabaseSchemaGuid = deployedDatabaseSchemaEntity.getGUID();
-                String relationalDBTypeGuid = relationalDBTypeEntity.getGUID();
-                // create the 2 relationships
-                createReferenceRelationship(ASSET_SCHEMA_TYPE,
-                                            databaseGuid,
-                                            DATABASE,
-                                            deployedDatabaseSchemaGuid,
-                                            DEPLOYED_DATABASE_SCHEMA);
-
-                createReferenceRelationship(DATA_CONTENT_FOR_DATASET,
-                                            deployedDatabaseSchemaGuid,
-                                            DEPLOYED_DATABASE_SCHEMA,
-                                            relationalDBTypeGuid,
-                                            RELATIONAL_DB_SCHEMA_TYPE);
-                List<String> tables = null;
-                try {
-                    tables = client.getTables(catName, dbName, "*");
-                } catch (TException e) {
-                    auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLES_FAILED.getMessageDefinition(e.getMessage()));
-                }
-
-                if (tables != null && !tables.isEmpty()) {
-                    // create each table and relationship
-                    for (String tableName : tables) {
-                        Table table = null;
-                        try {
-                            table = client.getTable(catName, dbName, tableName);
-                        } catch (TException e) {
-                            auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLE_FAILED.getMessageDefinition(tableName, e.getMessage()));
+                            ConnectorColumn column = new ConnectorColumn();
+                            column.setName(columnName);
+                            column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
+                            column.setType(dataType);
+                            connectorTable.addColumn(column);
                         }
-                        if (table != null) {
-                            String tableType = table.getTableType();
-                            String tableCanonicalName = baseCanonicalName + SEPARATOR_CHAR +"schema" + SEPARATOR_CHAR + tableName;
-
-                            String typeName = TABLE;
-
-                            EntityDetail tableEntity = getEntityDetailSkeleton(methodName,
-                                                                               TABLE,
-                                                                               tableName,
-                                                                               tableCanonicalName,
-                                                                               null,
-                                                                               true);
-
-//                            String owner = table.getOwner();
-//                            if (owner != null) {
-//                               TODO Can we store this on the table ?
-//                            }
-                            int createTime = table.getCreateTime();
-                            tableEntity.setCreateTime(new Date(createTime));
-
-
-                            List<Classification> tableClassifications = tableEntity.getClassifications();
-                            if (tableClassifications == null) {
-                                tableClassifications = new ArrayList<>();
-                            }
-                            if (!sendEntitiesForSchemaType) {
-                                Classification classification = createTypeEmbeddedClassificationForTable(methodName, tableEntity);
-                                tableClassifications.add(classification);
-                            }
-                            if (tableType.equals("VIRTUAL_VIEW")) {
-                                //Indicate that this table is a view using the classification
-                                tableClassifications.add(createCalculatedValueClassification("refreshRepository", tableEntity, table.getViewOriginalText()));
-                            }
-                            if (!tableClassifications.isEmpty()) {
-                                tableEntity.setClassifications(tableClassifications);
-                            }
-
-                            issueSaveEntityReferenceCopy(tableEntity);
-                            String tableGuid = tableEntity.getGUID();
-
-                            String tableTypeGUID = null; // only filled in when sendEntitiesForSchemaType = true
-                            if (sendEntitiesForSchemaType) {
-                                // add schema type entity
-                                EntityDetail tableEntityType = getEntityDetailSkeleton(methodName,
-                                        RELATIONAL_TABLE_TYPE,
-                                        tableName + SEPARATOR_CHAR +"type",
-                                        tableCanonicalName + SEPARATOR_CHAR + SEPARATOR_CHAR + "type", // double separator to the type qualified name does not clash with an attribute qualified name
-                                        null,
-                                        true);
-
-                                issueSaveEntityReferenceCopy(tableEntityType);
-                                tableTypeGUID = tableEntityType.getGUID();
-                                createReferenceRelationship(SCHEMA_ATTRIBUTE_TYPE,
-                                        tableEntity.getGUID(),
-                                        TABLE,
-                                        tableTypeGUID,
-                                        RELATIONAL_TABLE_TYPE);
-                            }
-
-                            // relationship
-
-
-                            createReferenceRelationship(ATTRIBUTE_FOR_SCHEMA,
-                                                        relationalDBTypeGuid,
-                                                        RELATIONAL_DB_SCHEMA_TYPE,
-                                                        tableGuid,
-                                                        TABLE);
-
-                            Iterator<FieldSchema> colsIterator = table.getSd().getColsIterator();
-
-                            while (colsIterator.hasNext()) {
-                                FieldSchema fieldSchema = colsIterator.next();
-                                String columnName = fieldSchema.getName();
-                                // TODO change the name for a derived column?
-
-                                EntityDetail columnEntity = getEntityDetailSkeleton(methodName,
-                                                                                    COLUMN,
-                                                                                    columnName,
-                                                                                    tableCanonicalName + SEPARATOR_CHAR + columnName,
-                                                                                    null,
-                                                                                    true);
-                                String dataType = fieldSchema.getType();
-                                if (!sendEntitiesForSchemaType) {
-                                    List<Classification> columnClassifications = columnEntity.getClassifications();
-                                    if (columnClassifications == null) {
-                                        columnClassifications = new ArrayList<>();
-                                    }
-
-                                    columnClassifications.add(createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
-
-                                    columnEntity.setClassifications(columnClassifications);
-                                }
-                                issueSaveEntityReferenceCopy(columnEntity);
-                                if (sendEntitiesForSchemaType) {
-                                    // add schema type entity
-                                    EntityDetail columnEntityType = getEntityDetailSkeleton(methodName,
-                                            RELATIONAL_COLUMN_TYPE,
-                                            columnName + SEPARATOR_CHAR + "type",
-                                            tableCanonicalName + SEPARATOR_CHAR + columnName + SEPARATOR_CHAR + "(type)",
-                                            null,
-                                            true);
-                                    if (dataType != null ) {
-                                        InstanceProperties instanceProperties = columnEntityType.getProperties();
-                                        repositoryHelper.addStringPropertyToInstance(methodName, instanceProperties, "dataType", dataType, methodName);
-                                        columnEntityType.setProperties(instanceProperties);
-                                    }
-
-                                    issueSaveEntityReferenceCopy(columnEntityType);
-                                    // create column to column type relationship
-                                    createReferenceRelationship(SCHEMA_ATTRIBUTE_TYPE,
-                                            columnEntity.getGUID(),
-                                            COLUMN,
-                                            columnEntityType.getGUID(),
-                                            RELATIONAL_COLUMN_TYPE);
-                                    // create table type to column relationship
-                                    createReferenceRelationship(ATTRIBUTE_FOR_SCHEMA,
-                                            tableTypeGUID,
-                                            RELATIONAL_TABLE_TYPE,
-                                            columnEntity.getGUID(),
-                                            COLUMN);
-
-                                } else {
-                                    // relate the attribute to the attribute
-                                    createReferenceRelationship(NESTED_SCHEMA_ATTRIBUTE,
-                                            tableGuid,
-                                            typeName,
-                                            columnEntity.getGUID(),
-                                            COLUMN);
-                                }
-                            }
-                        }
+                        connectorTables.add(connectorTable);
                     }
                 }
-            } catch (TypeErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR, methodName, e, e.getMessage());
-
             }
+            return connectorTables;
+        }
+
+        /**
+         * convert the connector tables to entities and relationships
+         *
+         * @param connectorTables connector tables
+         * @throws ConnectorCheckedException connector exception
+         * @throws TypeErrorException        type exception
+         */
+        void convertToConnectorTablesToEntitiesAndRelationships(List<ConnectorTable> connectorTables) throws ConnectorCheckedException, TypeErrorException {
+            String methodName = "convertToConnectorTablesToEntitiesAndRelationships";
+
+            for (ConnectorTable connectorTable : connectorTables) {
+                String tableQualifiedName = connectorTable.getQualifiedName();
+                EntityDetail tableEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                        SupportedTypes.TABLE,
+                        connectorTable.getName(),
+                        tableQualifiedName,
+                        null,
+                        true);
+
+
+                tableEntity.setCreateTime(connectorTable.getCreateTime());
+
+
+                List<Classification> tableClassifications = tableEntity.getClassifications();
+                if (tableClassifications == null) {
+                    tableClassifications = new ArrayList<>();
+                }
+                if (!sendEntitiesForSchemaType) {
+                    Classification classification = mapperHelper.createTypeEmbeddedClassificationForTable(methodName, tableEntity);
+                    tableClassifications.add(classification);
+                }
+                if ("VIRTUAL_VIEW".equals(connectorTable.getType())) {
+                    //Indicate that this hmsTable is a view using the classification
+                    tableClassifications.add(mapperHelper.createCalculatedValueClassification("refreshRepository", tableEntity, connectorTable.getHmsViewOriginalText()));
+                }
+                if (!tableClassifications.isEmpty()) {
+                    tableEntity.setClassifications(tableClassifications);
+                }
+
+                saveEntityReferenceCopyForTable(tableEntity, tableQualifiedName);
+                String tableGuid = tableEntity.getGUID();
+
+                String tableTypeGUID = null; // only filled in when sendEntitiesForSchemaType = true
+                if (sendEntitiesForSchemaType) {
+                    // add schema type entity
+                    EntityDetail tableEntityType = mapperHelper.getEntityDetailSkeleton(methodName,
+                            SupportedTypes.RELATIONAL_TABLE_TYPE,
+                            connectorTable.getName() + SupportedTypes.SEPARATOR_CHAR + "type",
+                            connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.SEPARATOR_CHAR + "type", // double separator to the type qualified name does not clash with an attribute qualified name
+                            null,
+                            true);
+
+                    saveEntityReferenceCopyForTable(tableEntityType, tableQualifiedName);
+                    tableTypeGUID = tableEntityType.getGUID();
+                    Relationship relationship =mapperHelper.createReferenceRelationship(SupportedTypes.SCHEMA_ATTRIBUTE_TYPE,
+                            tableEntity.getGUID(),
+                            SupportedTypes.TABLE,
+                            tableTypeGUID,
+                            SupportedTypes.RELATIONAL_TABLE_TYPE);
+                    saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
+                }
+
+                // relationship
+
+
+                Relationship relationship =mapperHelper.createReferenceRelationship(SupportedTypes.ATTRIBUTE_FOR_SCHEMA,
+                        relationalDBTypeGuid,
+                        SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,
+                        tableGuid,
+                        SupportedTypes.TABLE);
+                saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
+
+                Iterator<ConnectorColumn> colsIterator = connectorTable.getColumns().listIterator();
+
+                while (colsIterator.hasNext()) {
+                    ConnectorColumn connectorColumn = colsIterator.next();
+                    String columnName = connectorColumn.getName();
+                    // TODO change the name for a derived column?
+
+                    EntityDetail columnEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                            SupportedTypes.COLUMN,
+                            columnName,
+                            connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName,
+                            null,
+                            true);
+                    String dataType = connectorColumn.getType();
+                    if (!sendEntitiesForSchemaType) {
+                        List<Classification> columnClassifications = columnEntity.getClassifications();
+                        if (columnClassifications == null) {
+                            columnClassifications = new ArrayList<>();
+                        }
+
+                        columnClassifications.add(mapperHelper.createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
+
+                        columnEntity.setClassifications(columnClassifications);
+                    }
+                    saveEntityReferenceCopyForTable(columnEntity, tableQualifiedName);
+                    if (sendEntitiesForSchemaType) {
+                        // add schema type entity
+                        EntityDetail columnEntityType = mapperHelper.getEntityDetailSkeleton(methodName,
+                                SupportedTypes.RELATIONAL_COLUMN_TYPE,
+                                columnName + SupportedTypes.SEPARATOR_CHAR + "type",
+                                connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName + SupportedTypes.SEPARATOR_CHAR + "(type)",
+                                null,
+                                true);
+                        if (dataType != null) {
+                            InstanceProperties instanceProperties = columnEntityType.getProperties();
+                            repositoryHelper.addStringPropertyToInstance(methodName, instanceProperties, "dataType", dataType, methodName);
+                            columnEntityType.setProperties(instanceProperties);
+                        }
+
+                        saveEntityReferenceCopyForTable(columnEntityType, tableQualifiedName);
+                        // create column to column type relationship
+                         relationship = mapperHelper.createReferenceRelationship(SupportedTypes.SCHEMA_ATTRIBUTE_TYPE,
+                                columnEntity.getGUID(),
+                                SupportedTypes.COLUMN,
+                                columnEntityType.getGUID(),
+                                SupportedTypes.RELATIONAL_COLUMN_TYPE);
+                        saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
+                        saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
+                        // create hmsTable type to column relationship
+                        relationship = mapperHelper.createReferenceRelationship(SupportedTypes.ATTRIBUTE_FOR_SCHEMA,
+                                tableTypeGUID,
+                                SupportedTypes.RELATIONAL_TABLE_TYPE,
+                                columnEntity.getGUID(),
+                                SupportedTypes.COLUMN);
+                        saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
+
+                    } else {
+                        // relate the column to the table
+                        relationship=mapperHelper.createReferenceRelationship(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE,
+                                tableGuid,
+                                SupportedTypes.TABLE,
+                                columnEntity.getGUID(),
+                                SupportedTypes.COLUMN);
+                        saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
+                    }
+                }
+            }
+        }
+
+        private ConnectorTable getTableFromHMSTable(String baseCanonicalName, Table hmsTable) {
+            ConnectorTable connectorTable = new ConnectorTable();
+            String name = hmsTable.getTableName();
+            String tableType = hmsTable.getTableType();
+            String tableCanonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "schema" + SupportedTypes.SEPARATOR_CHAR + name;
+            String typeName = SupportedTypes.TABLE;
+            int createTime = hmsTable.getCreateTime();
+            //                            String owner = hmsTable.getOwner();
+            //                            if (owner != null) {
+            //                               TODO Can we store this on the hmsTable ?
+            //                            }
+
+            connectorTable.setName(name);
+            connectorTable.setCreateTime(new Date(createTime));
+            connectorTable.setQualifiedName(tableCanonicalName);
+            connectorTable.setType(tableType);
+            connectorTable.setType(typeName);
+
+            Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
+
+            while (colsIterator.hasNext()) {
+                ConnectorColumn column = new ConnectorColumn();
+                FieldSchema fieldSchema = colsIterator.next();
+                String columnName = fieldSchema.getName();
+                column.setName(columnName);
+                column.setType(fieldSchema.getType());
+                column.setQualifiedName(tableCanonicalName + SupportedTypes.SEPARATOR_CHAR + columnName);
+            }
+
+            return connectorTable;
         }
 
 
@@ -795,47 +785,48 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
          * Create Connection orientated entities. an Asset can be associated with a Connection,
          * which in turn has a ConnectionType and an Endpoint. Entities of these 3 types are created in this method
          * and relationships are created between them.
+         * <p>
+         * For more information on these entities see https://egeria-project.org/patterns/metadata-manager/overview/?h=asset+connections#asset-connections
          *
-         * For more infomration on these entities see https://egeria-project.org/patterns/metadata-manager/overview/?h=asset+connections#asset-connections
          * @param baseCanonicalName a unique name used as a base to create unique names for the entities
-         * @param databaseEntity the Database (which is a type of Asset)
+         * @param databaseEntity    the Database (which is a type of Asset)
          * @throws ConnectorCheckedException connector exception
          */
         private void createConnectionOrientatedEntities(String baseCanonicalName, EntityDetail databaseEntity) throws ConnectorCheckedException {
             String methodName = "createConnectionOrientatedEntities";
-            String name = baseCanonicalName + SEPARATOR_CHAR + "connection";
-            String canonicalName = baseCanonicalName + SEPARATOR_CHAR + "connection";
+            String name = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "connection";
+            String canonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "connection";
 
-            EntityDetail connectionEntity = getEntityDetailSkeleton(methodName,
-                                                                    CONNECTION,
-                                                                    name,
-                                                                    canonicalName,
-                                                                    null,
-                                                                    false);
+            EntityDetail connectionEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                    SupportedTypes.CONNECTION,
+                    name,
+                    canonicalName,
+                    null,
+                    false);
 
-            issueSaveEntityReferenceCopy(connectionEntity);
+            saveEntityReferenceCopy(connectionEntity);
 
-            name = baseCanonicalName + SEPARATOR_CHAR + CONNECTOR_TYPE;
-            canonicalName = baseCanonicalName + SEPARATOR_CHAR + CONNECTOR_TYPE;
+            name = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.CONNECTOR_TYPE;
+            canonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.CONNECTOR_TYPE;
 
-            EntityDetail connectionTypeEntity = getEntityDetailSkeleton(methodName,
-                                                                        CONNECTOR_TYPE,
-                                                                        name,
-                                                                        canonicalName,
-                                                                        null,
-                                                                        false);
-            issueSaveEntityReferenceCopy(connectionTypeEntity);
+            EntityDetail connectionTypeEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                    SupportedTypes.CONNECTOR_TYPE,
+                    name,
+                    canonicalName,
+                    null,
+                    false);
+            saveEntityReferenceCopy(connectionTypeEntity);
 
 
-            name = baseCanonicalName + SEPARATOR_CHAR + ENDPOINT;
+            name = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.ENDPOINT;
             canonicalName = name;
 
-            EntityDetail endpointEntity = getEntityDetailSkeleton(methodName,
-                                                                  ENDPOINT,
-                                                                  name,
-                                                                  canonicalName,
-                                                                  null,
-                                                                  false);
+            EntityDetail endpointEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                    SupportedTypes.ENDPOINT,
+                    name,
+                    canonicalName,
+                    null,
+                    false);
             InstanceProperties instanceProperties = endpointEntity.getProperties();
             //TODO does passing a protocol make sense here?
             if (configuredEndpointAddress != null) {
@@ -848,7 +839,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             }
 
 
-            issueSaveEntityReferenceCopy(endpointEntity);
+            saveEntityReferenceCopy(endpointEntity);
             // create relationships
 
             // entity guids used to create proxies
@@ -858,367 +849,66 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             String endPointGuid = endpointEntity.getGUID();
 
             // create the 3 relationships
-            createReferenceRelationship(CONNECTION_TO_ASSET,
-                                        connectionGuid,
-                                        CONNECTION,
-                                        dataFileGuid,
-                                        DATABASE);
+            aboveTableRelationshipListToStore.add(mapperHelper.createReferenceRelationship(SupportedTypes.CONNECTION_TO_ASSET,
+                    connectionGuid,
+                    SupportedTypes.CONNECTION,
+                    dataFileGuid,
+                    SupportedTypes.DATABASE));
 
-            createReferenceRelationship(CONNECTION_CONNECTOR_TYPE,
-                                        connectionGuid,
-                                        CONNECTION,
-                                        connectionTypeGuid,
-                                        CONNECTOR_TYPE);
+            aboveTableRelationshipListToStore.add(mapperHelper.createReferenceRelationship(SupportedTypes.CONNECTION_CONNECTOR_TYPE,
+                    connectionGuid,
+                    SupportedTypes.CONNECTION,
+                    connectionTypeGuid,
+                    SupportedTypes.CONNECTOR_TYPE));
 
-            createReferenceRelationship(CONNECTION_ENDPOINT,
-                                        connectionGuid,
-                                        CONNECTION,
-                                        endPointGuid,
-                                        ENDPOINT
-                                       );
+            aboveTableRelationshipListToStore.add(mapperHelper.createReferenceRelationship(SupportedTypes.CONNECTION_ENDPOINT,
+                    connectionGuid,
+                    SupportedTypes.CONNECTION,
+                    endPointGuid,
+                    SupportedTypes.ENDPOINT
+            ));
         }
 
-        private void issueSaveEntityReferenceCopy(EntityDetail entityToAdd) throws ConnectorCheckedException {
-            String methodName = "issueSaveEntityReferenceCopy";
-
-            try {
-                metadataCollection.saveEntityReferenceCopy(
-                        userId,
-                        entityToAdd);
-            } catch (InvalidParameterException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, e);
-            } catch (RepositoryErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.REPOSITORY_ERROR_EXCEPTION, methodName, e);
-            } catch (TypeErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e);
-            } catch (PropertyErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.PROPERTY_ERROR_EXCEPTION, methodName, e);
-            } catch (HomeEntityException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.HOME_ENTITY_ERROR_EXCEPTION, methodName, e);
-            } catch (EntityConflictException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.ENTITY_CONFLICT_ERROR_EXCEPTION, methodName, e);
-            } catch (InvalidEntityException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_ENTITY_ERROR_EXCEPTION, methodName, e);
-            } catch (FunctionNotSupportedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.FUNCTION_NOT_SUPPORTED_ERROR_EXCEPTION, methodName, e);
-            } catch (UserNotAuthorizedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.USER_NOT_AUTHORIZED_EXCEPTION, methodName, e);
-            }
+        private void saveEntityReferenceCopy(EntityDetail entityToAdd) {
+            aboveTableEntityListToStore.add(entityToAdd);
         }
 
-        private void createReferenceRelationship(String relationshipTypeName, String end1GUID, String end1TypeName, String end2GUID, String end2TypeName) throws ConnectorCheckedException {
-            String methodName = "createRelationship";
-
-
-            Relationship relationship = null;
-            try {
-                relationship = repositoryHelper.getSkeletonRelationship(methodName,
-                                                                        metadataCollectionId,
-                                                                        InstanceProvenanceType.LOCAL_COHORT,
-                                                                        userId,
-                                                                        relationshipTypeName);
-                // leaving the version as 1 - until we have attributes we need to update
-            } catch (TypeErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e);
+        private void saveEntityReferenceCopyForTable(EntityDetail entityToAdd, String qualifiedTableName) {
+            List<EntityDetail> entities = qualifiedTableNameToEntityMap.get(qualifiedTableName);
+            if (entities == null) {
+                entities= new ArrayList<>();
+                entities.add(entityToAdd);
+                qualifiedTableNameToEntityMap.put(qualifiedTableName,entities);
+            } else {
+                entities.add(entityToAdd);
             }
-
-            String connectionToAssetCanonicalName = end1GUID + SEPARATOR_CHAR + relationshipTypeName + SEPARATOR_CHAR + end2GUID;
-            String relationshipGUID = null;
-            try {
-                relationshipGUID = Base64.getUrlEncoder().encodeToString(connectionToAssetCanonicalName.getBytes("UTF-8"));
-            } catch (UnsupportedEncodingException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.ENCODING_EXCEPTION, methodName, e, "connectionToAssetCanonicalName", connectionToAssetCanonicalName);
-            }
-
-            relationship.setGUID(relationshipGUID);
-            //end 1
-            EntityProxy entityProxy1 = getEntityProxySkeleton(end1GUID, end1TypeName);
-            relationship.setEntityOneProxy(entityProxy1);
-
-            //end 2
-            EntityProxy entityProxy2 = getEntityProxySkeleton(end2GUID, end2TypeName);
-            relationship.setEntityTwoProxy(entityProxy2);
-            try {
-                metadataCollection.saveRelationshipReferenceCopy(
-                        userId,
-                        relationship);
-            } catch (InvalidParameterException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, e);
-            } catch (RepositoryErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.REPOSITORY_ERROR_EXCEPTION, methodName, e);
-            } catch (TypeErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e);
-            } catch (EntityNotKnownException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.ENTITY_NOT_KNOWN, methodName, e);
-            } catch (PropertyErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.PROPERTY_ERROR_EXCEPTION, methodName, e);
-            } catch (HomeRelationshipException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.HOME_RELATIONSHIP_ERROR_EXCEPTION, methodName, e);
-            } catch (RelationshipConflictException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.RELATIONSHIP_CONFLICT_ERROR_EXCEPTION, methodName, e);
-            } catch (InvalidRelationshipException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.INVALID_RELATIONSHIP_ERROR_EXCEPTION, methodName, e);
-            } catch (FunctionNotSupportedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.FUNCTION_NOT_SUPPORTED_ERROR_EXCEPTION, methodName, e);
-            } catch (UserNotAuthorizedException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.USER_NOT_AUTHORIZED_EXCEPTION, methodName, e);
-            }
-
         }
-
+        private void saveRelationshipReferenceCopyForTable(Relationship relationshipToAdd, String qualifiedTableName) {
+            List<Relationship> relationships = qualifiedTableNameToRelationshipMap.get(qualifiedTableName);
+            if (relationships ==null) {
+                relationships =new ArrayList<>();
+                relationships.add(relationshipToAdd);
+                qualifiedTableNameToRelationshipMap.put(qualifiedTableName, relationships);
+            } else {
+                relationships.add(relationshipToAdd);
+            }
+        }
         /**
-         * Create an entity proxy with the supplied parameters
-         * @param guid GUID
-         * @param typeName type name
-         * @return entity proxy
-         * @throws ConnectorCheckedException Connector errored
+         * Issue the batch event with the list of supplied entities and relationships
+         *
+         * @param relationshipList relationships to include in the event
+         * @param entityList       entities to include in the event
          */
-        private EntityProxy getEntityProxySkeleton(String guid, String typeName) throws ConnectorCheckedException {
-            String methodName = "getEntityProxySkeleton";
-            EntityProxy proxy = new EntityProxy();
-            TypeDefSummary typeDefSummary = repositoryHelper.getTypeDefByName("getEntityProxySkeleton", typeName);
-            InstanceType type = null;
-            try {
-                if (typeDefSummary == null) {
-                    throw new TypeErrorException(HMSOMRSErrorCode.TYPEDEF_NAME_NOT_KNOWN.getMessageDefinition(repositoryName, methodName, typeName),
-                                                 this.getClass().getName(),
-                                                 methodName);
-                }
-                type = repositoryHelper.getNewInstanceType(methodName, typeDefSummary);
-            } catch (TypeErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e);
-            }
-            proxy.setType(type);
-            proxy.setGUID(guid);
-            proxy.setMetadataCollectionId(metadataCollectionId);
-            proxy.setMetadataCollectionName(metadataCollectionName);
-            return proxy;
-        }
+        private void issueBatchEvent(List<Relationship> relationshipList, List<EntityDetail> entityList) {
+            InstanceGraph instances = new InstanceGraph(entityList, relationshipList);
 
-        /**
-         * Create a skeleton of the entities, populated with the parameters supplied
-         * @param originalMethodName callers method name - for diagnostics
-         * @param typeName type name of the entity
-         * @param name display name of the entity
-         * @param canonicalName unique name
-         * @param attributeMap map of attributes
-         * @param generateUniqueVersion whether to generate a unique version (only required if we are going to update the entity)
-         * @return EntityDetail created entity detail
-         * @throws ConnectorCheckedException connector error
-         */
-        private EntityDetail getEntityDetailSkeleton(String originalMethodName,
-                                                     String typeName,
-                                                     String name,
-                                                     String canonicalName,
-                                                     Map<String, String> attributeMap,
-                                                     boolean generateUniqueVersion
-
-                                                    ) throws ConnectorCheckedException {
-            String methodName = "getEntityDetail";
-
-            String guid = null;
-            try {
-                guid = Base64.getUrlEncoder().encodeToString(canonicalName.getBytes("UTF-8"));
-            } catch (UnsupportedEncodingException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.ENCODING_EXCEPTION, methodName, e, "canonicalName", canonicalName);
-            }
-
-
-            InstanceProperties initialProperties = repositoryHelper.addStringPropertyToInstance(methodName,
-                                                                                                null,
-                                                                                                "name",
-                                                                                                name,
-                                                                                                methodName);
-            initialProperties = repositoryHelper.addStringPropertyToInstance(methodName,
-                                                                             initialProperties,
-                                                                             "qualifiedName",
-                                                                             qualifiedNamePrefix + canonicalName,
-                                                                             methodName);
-            if (attributeMap != null && !attributeMap.keySet().isEmpty()) {
-                addPropertiesToInsanceProperties(initialProperties, attributeMap);
-            }
-
-            EntityDetail entityToAdd = new EntityDetail();
-            entityToAdd.setProperties(initialProperties);
-
-            // set the provenance as local cohort
-            entityToAdd.setInstanceProvenanceType(InstanceProvenanceType.LOCAL_COHORT);
-            entityToAdd.setMetadataCollectionId(metadataCollectionId);
-
-            TypeDef typeDef = repositoryHelper.getTypeDefByName(methodName, typeName);
-
-            try {
-                if (typeDef == null) {
-                    throw new TypeErrorException(HMSOMRSErrorCode.TYPEDEF_NAME_NOT_KNOWN.getMessageDefinition(metadataCollectionName, methodName, typeName),
-                                                 this.getClass().getName(),
-                                                 originalMethodName);
-                }
-                InstanceType instanceType = repositoryHelper.getNewInstanceType(repositoryName, typeDef);
-                entityToAdd.setType(instanceType);
-            } catch (TypeErrorException e) {
-                raiseConnectorCheckedException(HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e);
-            }
-
-            entityToAdd.setGUID(guid);
-            entityToAdd.setStatus(InstanceStatus.ACTIVE);
-            // for Entities that never change there is only a need for one version.
-            // Entities never change if they have no attributes other than name - we generated the qualifiedName and GUID from
-            // the name - so a change in name is a change in GUID, which would mean a delete then create.
-            // For entities with properties then those properties could be updated and they require a version.
-            long version = 1;
-            if (generateUniqueVersion) {
-                version = System.currentTimeMillis();
-            }
-            entityToAdd.setVersion(version);
-
-            return entityToAdd;
-
-        }
-
-        /**
-         * Add a map of properties to instance properties
-         * @param properties instance properties to be updated
-         * @param attributeMap map of properties
-         */
-        void addPropertiesToInsanceProperties(InstanceProperties properties, Map<String, String> attributeMap) {
-            String methodName = "addPropertiesToInstanceProperties";
-            if (attributeMap != null) {
-                Set<Map.Entry<String,String>> entrySet = attributeMap.entrySet();
-                Iterator<Map.Entry<String,String>> iter = entrySet.iterator();
-                while (iter.hasNext()) {
-                    Map.Entry<String,String>  entry = iter.next();
-                    repositoryHelper.addStringPropertyToInstance(methodName,
-                                                                 properties,
-                                                                 entry.getKey(),
-                                                                 entry.getValue(),
-                                                                 methodName);
-                }
-            }
-        }
-    }
-
-    /**
-     * Create the Calculated value classification
-     * @param apiName api name for diagnostics
-     * @param entity entity associated with the Classification
-     * @param formula formula associated with the view
-     * @return the Calculated Value classification
-     * @throws TypeErrorException there is an error associated with the types
-     */
-    private Classification createCalculatedValueClassification(String apiName, EntityDetail entity, String formula) throws TypeErrorException {
-        String methodName = "createCalculatedValueClassification";
-        Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, CALCULATED_VALUE, entity.getType().getTypeDefName());
-        InstanceProperties initialProperties = repositoryHelper.addStringPropertyToInstance(methodName,
-                                                                                            null,
-                                                                                            "formula",
-                                                                                            formula,
-                                                                                            methodName);
-        classification.setProperties(initialProperties);
-        repositoryHelper.addClassificationToEntity(apiName, entity, classification, methodName);
-
-        return classification;
-    }
-
-    /**
-     * Create embedded type classification for column
-     * @param apiName api name for diagnostics
-     * @param entity entity the classification is associated with
-     * @param dataType type of the column
-     * @return TypeEmbeddedClassification the type embedded classification
-     * @throws TypeErrorException there is an error associated with the types
-     */
-    private Classification createTypeEmbeddedClassificationForColumn(String apiName, EntityDetail entity, String dataType) throws TypeErrorException {
-        return createTypeEmbeddedClassification(apiName,RELATIONAL_COLUMN_TYPE, entity, dataType);
-    }
-
-    /**
-     * Create embedded type classification for table
-     *
-     * @param apiName API name - for diagnostics
-     * @param entity  - entity
-     * @return the embedded type classification
-     * @throws TypeErrorException there is an error associated with the types
-     */
-    private Classification createTypeEmbeddedClassificationForTable(String apiName, EntityDetail entity) throws TypeErrorException {
-
-        return createTypeEmbeddedClassification(apiName, RELATIONAL_TABLE_TYPE, entity, null);
-    }
-
-    /**
-     *
-     * @param apiName API name for diagnostics
-     * @param type the schema type name.
-     * @param entity entity to apply the classification to
-     * @param dataType column type if a column
-     * @return the embedded type classification
-     * @throws TypeErrorException there is an error associated with the types
-     */
-    private Classification createTypeEmbeddedClassification(String apiName, String type, EntityDetail entity, String dataType) throws TypeErrorException {
-        String methodName = "createTypeEmbeddedClassification";
-        Classification classification = repositoryHelper.getSkeletonClassification(methodName, userId, TYPE_EMBEDDED_ATTRIBUTE, entity.getType().getTypeDefName());
-        InstanceProperties instanceProperties = new InstanceProperties();
-        repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "schemaTypeName", type, methodName);
-        if (dataType != null ) {
-            repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "dataType", dataType, methodName);
-        }
-        classification.setProperties(instanceProperties);
-        repositoryHelper.addClassificationToEntity(apiName, entity, classification, methodName);
-        return classification;
-
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    synchronized public void disconnect() throws ConnectorCheckedException {
-        super.disconnect();
-        final String methodName = "disconnect";
-        pollingThread.stop();
-        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
-    }
-
-    /**
-     * Throws a ConnectorCheckedException based on the provided parameters.
-     *
-     * @param errorCode  the error code for the exception
-     * @param methodName the method name throwing the exception
-     * @param cause      the underlying cause of the exception (if any, otherwise null)
-     * @param params     any additional parameters for formatting the error message
-     * @throws ConnectorCheckedException always
-     */
-    private void raiseConnectorCheckedException(HMSOMRSErrorCode errorCode, String methodName, Exception cause, String... params) throws ConnectorCheckedException {
-        if (cause == null) {
-            throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
-                                                this.getClass().getName(),
-                                                methodName);
-        } else {
-            throw new ConnectorCheckedException(errorCode.getMessageDefinition(params),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                cause);
-        }
-    }
-
-    /**
-     * Throws a RepositoryErrorException using the provided parameters.
-     *
-     * @param errorCode  the error code for the exception
-     * @param methodName the name of the method throwing the exception
-     * @param cause      the underlying cause of the exception (or null if none)
-     * @param params     any parameters for formatting the error message
-     * @throws RepositoryErrorException always
-     */
-    private void raiseRepositoryErrorException(HMSOMRSErrorCode errorCode, String methodName, Throwable cause, String... params) throws RepositoryErrorException {
-        if (cause == null) {
-            throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
-                                               this.getClass().getName(),
-                                               methodName);
-        } else {
-            throw new RepositoryErrorException(errorCode.getMessageDefinition(params),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               cause);
+            // send the event
+            repositoryEventProcessor.processInstanceBatchEvent("HMSOMRSRepositoryEventMapper",
+                    repositoryConnector.getMetadataCollectionId(),
+                    repositoryConnector.getServerName(),
+                    repositoryConnector.getServerType(),
+                    repositoryConnector.getOrganizationName(),
+                    instances);
         }
     }
 }
