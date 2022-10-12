@@ -608,9 +608,9 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         }
 
         /**
-         * convert the connector tables to Entitites and relationships
+         * convert the connector tables to entities and relationships
          *
-         * @param connectorTables
+         * @param connectorTables connector tables
          * @throws ConnectorCheckedException connector exception
          * @throws TypeErrorException        type exception
          */
