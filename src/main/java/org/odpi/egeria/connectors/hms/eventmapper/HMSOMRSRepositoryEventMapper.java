@@ -81,13 +81,13 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
     private PollingThread pollingThread;
     private String databaseGUID;
+    private final String className = this.getClass().getName();
 
     /**
      * Default constructor
      */
     public HMSOMRSRepositoryEventMapper() {
         super();
-//        this.sourceName = "HMSOMRSRepositoryEventMapper";
     }
 
     /**
@@ -102,7 +102,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
         HiveMetaStoreClient client = null;
         EndpointProperties endpointProperties = connectionProperties.getEndpoint();
         if (endpointProperties == null) {
-            ExceptionHelper.raiseRepositoryErrorException(this.getClass().getName(), HMSOMRSErrorCode.ENDPOINT_NOT_SUPPLIED_IN_CONFIG, methodName, null, "null");
+            ExceptionHelper.raiseRepositoryErrorException(className, HMSOMRSErrorCode.ENDPOINT_NOT_SUPPLIED_IN_CONFIG, methodName, null, "null");
         } else {
             // populate the Hive configuration for the HMS client.
             Configuration conf = new Configuration();
@@ -406,13 +406,12 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
             saveEntityReferenceCopy(relationalDBTypeEntity);
 
             // create Relationships
-            String databaseGuid = databaseEntity.getGUID();
             String deployedDatabaseSchemaGuid = deployedDatabaseSchemaEntity.getGUID();
             relationalDBTypeGuid = relationalDBTypeEntity.getGUID();
             // create the 2 relationships
 
             aboveTableRelationshipListToStore.add(mapperHelper.createReferenceRelationship(SupportedTypes.ASSET_SCHEMA_TYPE,
-                    databaseGuid,
+                    databaseGUID,
                     SupportedTypes.DATABASE,
                     deployedDatabaseSchemaGuid,
                     SupportedTypes.DEPLOYED_DATABASE_SCHEMA));
