@@ -75,7 +75,7 @@ description = 'Egeria Connector for Hive Metastore'
 ext {
     egeriaversion = '3.10'
     slf4jVersion = '1.7.36'
-    jacksonVersion = '2.13.2'
+    jacksonVersion = '2.13.4'
     jupiterVersion = '5.8.2'
     httpclientVersion = '4.5.13'
     springwebVersion = '5.3.19'
