@@ -388,14 +388,6 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
 
             createConnectionOrientatedEntities(baseCanonicalName, databaseEntity);
 
-            // create DeployedDatabaseSchema
-            EntityDetail deployedDatabaseSchemaEntity = mapperHelper.getEntityDetailSkeleton(methodName,
-                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA,
-                    baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "schema",
-                    baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "schema",
-                    null,
-                    false);
-            saveEntityReferenceCopy(deployedDatabaseSchemaEntity);
             // create RelationalDBType
             EntityDetail relationalDBTypeEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                     SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,
@@ -404,23 +396,16 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                     null,
                     false);
             saveEntityReferenceCopy(relationalDBTypeEntity);
-
-            // create Relationships
-            String deployedDatabaseSchemaGuid = deployedDatabaseSchemaEntity.getGUID();
             relationalDBTypeGuid = relationalDBTypeEntity.getGUID();
-            // create the 2 relationships
+
+            // create Relationship
 
             aboveTableRelationshipListToStore.add(mapperHelper.createReferenceRelationship(SupportedTypes.ASSET_SCHEMA_TYPE,
                     databaseGUID,
                     SupportedTypes.DATABASE,
-                    deployedDatabaseSchemaGuid,
-                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA));
-
-            aboveTableRelationshipListToStore.add(mapperHelper.createReferenceRelationship(SupportedTypes.DATA_CONTENT_FOR_DATASET,
-                    deployedDatabaseSchemaGuid,
-                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA,
-                    relationalDBTypeGuid,
+                    relationalDBTypeEntity.getGUID(),
                     SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE));
+
         }
 
         /**
@@ -726,7 +711,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSRepositoryEventMapperBase
                                 columnEntityType.getGUID(),
                                 SupportedTypes.RELATIONAL_COLUMN_TYPE);
                         saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
-                        saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
+
                         // create hmsTable type to column relationship
                         relationship = mapperHelper.createReferenceRelationship(SupportedTypes.ATTRIBUTE_FOR_SCHEMA,
                                 tableTypeGUID,

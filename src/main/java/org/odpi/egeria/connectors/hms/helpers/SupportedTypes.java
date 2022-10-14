@@ -18,9 +18,8 @@ public class SupportedTypes {
     public static final String CONNECTION_ENDPOINT = "ConnectionEndpoint";
     public static final String CONNECTION_CONNECTOR_TYPE = "ConnectionConnectorType";
     public static final String CONNECTION_TO_ASSET = "ConnectionToAsset";
-
     public static final String DATABASE = "Database";
-    public static final String DEPLOYED_DATABASE_SCHEMA = "DeployedDatabaseSchema";
+
     public static final String RELATIONAL_DB_SCHEMA_TYPE = "RelationalDBSchemaType";
     // relationship
     public static final String DATA_CONTENT_FOR_DATASET = "DataContentForDataSet";

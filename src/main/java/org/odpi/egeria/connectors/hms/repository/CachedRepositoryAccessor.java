@@ -125,6 +125,22 @@ public class CachedRepositoryAccessor {
    public void saveRelationshipReferenceCopyToStore(Relationship relationship) throws ConnectorCheckedException {
         String methodName = "storeRelationshipReferenceCopy";
         try {
+            // TODO more specific messages
+            if (relationship.getGUID() == null) {
+                ExceptionHelper.raiseConnectorCheckedException(className, HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, null);
+            }
+            if (relationship.getEntityOneProxy() == null) {
+                ExceptionHelper.raiseConnectorCheckedException(className, HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, null);
+            }
+            if (relationship.getEntityOneProxy().getGUID() == null) {
+                ExceptionHelper.raiseConnectorCheckedException(className, HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, null);
+            }
+            if (relationship.getEntityTwoProxy() == null) {
+                ExceptionHelper.raiseConnectorCheckedException(className, HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, null);
+            }
+            if (relationship.getEntityTwoProxy().getGUID() == null) {
+                ExceptionHelper.raiseConnectorCheckedException(className, HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, null);
+            }
             metadataCollection.saveRelationshipReferenceCopy(
                     userId,
                     relationship);
@@ -158,7 +174,11 @@ public class CachedRepositoryAccessor {
      * @throws ConnectorCheckedException connector exception
      */
     public void saveEntityReferenceCopyToStore(EntityDetail entityToAdd) throws ConnectorCheckedException {
-        String methodName = "storeEntityReferenceCopy";
+        String methodName = "saveEntityReferenceCopy";
+        if (entityToAdd.getGUID() == null) {
+            // TODO more specific message
+            ExceptionHelper.raiseConnectorCheckedException(className, HMSOMRSErrorCode.INVALID_PARAMETER_EXCEPTION, methodName, null);
+        }
 
         try {
             metadataCollection.saveEntityReferenceCopy(
