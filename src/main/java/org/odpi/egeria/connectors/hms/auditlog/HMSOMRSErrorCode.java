@@ -103,7 +103,7 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
                            "Raise a Git issue to have this investigated."),
 
     EVENT_MAPPER_IMPROPERLY_INITIALIZED(400, "OMRS-HMS-REPOSITORY-400-091 ",
-                                        "The event mapper has been improperly initialized for repository {1}",
+                                        "The event mapper has been improperly initialized for repository {0}",
                                         "The system will be unable to process any events",
                                         "Check the system logs and diagnose or report the problem."),
 

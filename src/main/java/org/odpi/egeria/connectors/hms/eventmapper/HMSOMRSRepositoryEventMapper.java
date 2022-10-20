@@ -15,8 +15,11 @@ import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
 import org.odpi.egeria.connectors.hms.helpers.MapperHelper;
 import org.odpi.egeria.connectors.hms.helpers.SupportedTypes;
 import org.odpi.egeria.connectors.hms.helpers.ExceptionHelper;
-import org.odpi.egeria.connectors.hms.repository.CachedRepositoryAccessor;
-import org.odpi.egeria.connectors.hms.repositoryconnector.CachingOMRSRepositoryProxyConnector;
+import org.odpi.openmetadata.adapters.repositoryservices.caching.repository.CachedRepositoryAccessor;
+import org.odpi.openmetadata.adapters.repositoryservices.caching.repositoryconnector.CachingOMRSRepositoryProxyConnector;
+//org.odpi.openmetadata.adapters.repositoryservices.caching.repository
+//import org.odpi.egeria.connectors.hms.repository.CachedRepositoryAccessor;
+//import org.odpi.egeria.connectors.hms.repositoryconnector.CachingOMRSRepositoryProxyConnector;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedException;
 import org.odpi.openmetadata.frameworks.connectors.properties.EndpointProperties;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.OMRSMetadataCollection;
