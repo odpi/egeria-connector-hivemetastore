@@ -87,7 +87,7 @@ ext {
 dependencies {
     // authoritative versions for dependencyManagement provided by egeria core - this uses the dependencyManagement
     // in the main Egeria pom to define the versions of the dependencies.
-    implementation enforcedPlatform("org.odpi.egeria:egeria:${egeriaversion}")
+    implementation platform("org.odpi.egeria:egeria:${egeriaversion}")
 //    implementation "org.odpi.egeria:egeria:${egeriaversion}"
 
     // Only used for build - already present in server chassis at runtime - similar to 'provided' with maven
