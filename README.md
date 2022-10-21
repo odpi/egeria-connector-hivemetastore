@@ -100,7 +100,7 @@ During 2022 we have also had a number of Webinars relating to connector choices 
 
 ### Reference materials 
 
-* [https://github.com/odpi/egeria/blob/master/open-metadata-implementation/repository-services/README.md](https://github.com/odpi/egeria/blob/master/open-metadata-implementation/repository-services/README.md)
+* [https://github.com/odpi/egeria/blob/main/open-metadata-implementation/repository-services/README.md](https://github.com/odpi/egeria/blob/main/open-metadata-implementation/repository-services/README.md)
   and it's sub-pages are great resources for developers.
 * [Egeria Webinars](https://wiki.lfaidata.foundation/display/EG/Egeria+Webinar+program) particularly the one on repository connectors.
 
