@@ -32,7 +32,7 @@ The Hive Metastore can be run as a standalone one. This standalone server jar fi
 API. The HMSClient API used is 
 [https://github.com/apache/hive/blob/master/standalone-metastore/metastore-common/src/main/java/org/apache/hadoop/hive/metastore/HiveMetaStoreClient.java](https://github.com/apache/hive/blob/master/standalone-metastore/metastore-common/src/main/java/org/apache/hadoop/hive/metastore/HiveMetaStoreClient.java)
 It uses the Thrift API to communicate with the Hive Metastore.
-At this time (July 2022) the version 3.1.3 of this Hive Metastore has [vulnerabilities](https://mvnrepository.com/artifact/org.apache.hive/hive-standalone-metastore/3.1.3)
+At this time (September 2022) the version 3.1.3 of this Hive Metastore has [vulnerabilities](https://mvnrepository.com/artifact/org.apache.hive/hive-standalone-metastore/3.1.3)
 A number of excludes were required in the gradle build file to ensure the appropriate vulnerable libraries are not present - as reported by Sonarscan and lift.
 
 HMS Client calls used:
@@ -53,36 +53,40 @@ these are specified by name in the Egeria configuration.
 
 #### Entity Types 
 
-| HMS concept | Description                           | Egeria open Entity type | Comments                                                                 |
-|-------------|---------------------------------------|-------------------------|--------------------------------------------------------------------------|
-| Catalog     | Higher level of container within Hive | Not modeled             | The getCatalogs API is not always present in all HMS implementations     |
-| Database    | Lives within a Catalog                | Database                |                                                                          |
-| n/a         | n/a                                   | Connection              | This represents the connection to the instance data                      |
-| n/a         | n/a                                   | ConnectionType          | This is the type of the connection                                       |
-| n/a         | n/a                                   | Endpoint                | This is where the endpoint information is stored                         |
-| n/a         | n/a                                   | DeployedDatabaseSchema  | Deployed Schema                                                          |
-| Database    | Lives within a Catalog                | RelationalDBSchemaType  | Database schema type                                                     |
-| Database    | Lives within a Catalog                | RelationalTable         | Relational Table                                                         |
-| Database    | Lives within a Catalog                | RelationalColumn        | Relational Column                                                        |
+| HMS concept | Description                           | Egeria open Entity type | Comments                                                             |
+|-------------|---------------------------------------|-------------------------|----------------------------------------------------------------------|
+| Catalog     | Higher level of container within Hive | Not modeled             | The getCatalogs API is not always present in all HMS implementations |
+| Database    | Lives within a Catalog                | Database                |                                                                      |
+| n/a         | n/a                                   | Connection              | This represents the connection to the instance data                  |
+| n/a         | n/a                                   | ConnectionType          | This is the type of the connection                                   |
+| n/a         | n/a                                   | Endpoint                | This is where the endpoint information is stored                     |
+| n/a         | n/a                                   | DeployedDatabaseSchema  | Deployed Schema                                                      |
+| Database    | Lives within a Catalog                | RelationalDBSchemaType  | Database schema type                                                 |
+| Table       | Lives within a Catalog                | RelationalTable         | Relational Table                                                     |
+| Column       | Lives within a Catalog                | RelationalColumn        | Relational Column                                                    |
+| n/a         | n/a                 | RelationalTableType     | Relational Table type - deprecated                                   |
+| n/a         | n/a                 | RelationalColumnType    | Relational Column type - deprecated                                  |
 
 #### Relationship Types
 
-| Egeria open Relationship type | Comments                                                                |
-|-------------------------------|-------------------------------------------------------------------------|
- | ConnectionEndpoint            | Relationship between Connection and Endpoint                            |
- | ConnectionConnectorType       | Relationship between Connection and Connector Type                      |
- | ConnectionToAsset             | Relationship between Connection and Asset                               |
- | AssetSchemaType               | Relationship between Database (the asset) and Schema Type               |
- | AttributeForSchema            | Relationship between the RelationalTable and RelationalColumn           |
- | DataContentForDataSet         | Relationship between DeloyedDatabaseSchema and RelationalDBSchemaType   |
+| Egeria open Relationship type | Comments                                                                                                     |
+|-------------------------------|--------------------------------------------------------------------------------------------------------------|
+ | ConnectionEndpoint            | Relationship between Connection and Endpoint                                                                 |
+ | ConnectionConnectorType       | Relationship between Connection and Connector Type                                                           |
+ | ConnectionToAsset             | Relationship between Connection and Asset                                                                    |
+ | AssetSchemaType               | Relationship between Database (the asset) and Schema Type                                                    |
+ | AttributeForSchema            | Relationship between the RelationalDBSchemaType and RelationalTables                                         |
+| AttributeForSchema            | Relationship between the RelationalTableType and RelationalColumns when not when using TypeEmbeddedAttribute | 
+| NestedSchemaAttribute         | Relationship between the RelationalTable and RelationalColumn when using TypeEmbeddedAttribute               |
+ | DataContentForDataSet         | Relationship between DeloyedDatabaseSchema and RelationalDBSchemaType                                        |
 
 #### Classification Types
 
-| HMS concept                  | Description                                                      | Egeria open Classifation type | Comments                                                            |
-|------------------------------|------------------------------------------------------------------|-------------------------------|---------------------------------------------------------------------|
-| Hive table Type              | if this is VIRTUAL_VIEW then this is a view ratheer than a table | CalculatedValue               | The RelationalTable is classified with CalculatedValue if is a view |
-| for columns fieldSchema Type | This is the type of the Hive column (e.g. String)                | TypeEmbeddedAttribute         | This contains the type of the column                                |
-| for tables n/a               | n/a                                                              | TypeEmbeddedAttribute         | The type of the Table                                               |
+| HMS concept                  | Description                                                     | Egeria open Classifation type | Comments                                                            |
+|------------------------------|-----------------------------------------------------------------|-------------------------------|---------------------------------------------------------------------|
+| Hive table Type              | if this is VIRTUAL_VIEW then this is a view rather than a table | CalculatedValue               | The RelationalTable is classified with CalculatedValue if is a view |
+| for columns fieldSchema Type | This is the type of the Hive column (e.g. String)               | TypeEmbeddedAttribute         | This contains the type of the column                                |
+| for tables n/a               | n/a                                                             | TypeEmbeddedAttribute         | The type of the Table                                               |
 
 
 
@@ -96,7 +100,7 @@ During 2022 we have also had a number of Webinars relating to connector choices 
 
 ### Reference materials 
 
-* [https://github.com/odpi/egeria/blob/master/open-metadata-implementation/repository-services/README.md](https://github.com/odpi/egeria/blob/master/open-metadata-implementation/repository-services/README.md)
+* [https://github.com/odpi/egeria/blob/main/open-metadata-implementation/repository-services/README.md](https://github.com/odpi/egeria/blob/main/open-metadata-implementation/repository-services/README.md)
   and it's sub-pages are great resources for developers.
 * [Egeria Webinars](https://wiki.lfaidata.foundation/display/EG/Egeria+Webinar+program) particularly the one on repository connectors.
 
