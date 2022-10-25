@@ -10,7 +10,7 @@ If you are interested in Egeria connectivity to Hive metastore, please join us o
 & community calls to discuss. You can find out more in the [Community Guide](http://egeria-project.org/guides/community/)
 
 This readme is aimed at developers of this connector. How to configure and use this connector will be documented in 
-Egeria documentation site - TODO update with appropriate links when the content is there 
+Egeria documentation site - TODO update with appropriate links when the content is there.
 
 ## Design
 
