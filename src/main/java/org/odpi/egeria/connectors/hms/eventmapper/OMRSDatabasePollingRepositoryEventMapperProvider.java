@@ -18,35 +18,44 @@ import java.util.List;
  * name of the OMRS Connector implementation (by calling super.setConnectorClassName(className)).
  * Then the connector provider will work.
  */
-public class HMSOMRSRepositoryEventMapperProvider extends OMRSDatabasePollingRepositoryEventMapperProvider {
+abstract public class OMRSDatabasePollingRepositoryEventMapperProvider extends OMRSRepositoryConnectorProviderBase {
 
-    static final String CONNECTOR_TYPE_GUID = "fd923c81-4bfb-445f-a866-2ae85b2bdefa";
-    static final String CONNECTOR_TYPE_NAME = "OMRS Hive Metastore Event Mapper Connector";
-    static final String CONNECTOR_TYPE_DESC = "OMRS Hive Metastore Event Mapper Connector that polls for content.";
+    static final String QUALIFIED_NAME_PREFIX = "qualifiedNamePrefix";
 
-    static final String METADATA_STORE_USER = "MetadataStoreUserId";
-    static final String METADATA_STORE_PASSWORD = "MetadataStorePassword";
+    static final String REFRESH_TIME_INTERVAL = "refreshTimeInterval";
 
-    static final String USE_SSL = "useSSL";
+    static final String CATALOG_NAME = "CatalogName";
+    static final String DATABASE_NAME = "DatabaseName";
+
+    static final String SEND_POLL_EVENTS = "sendPollEvents";
+
+    /**
+     * If this is set then we use this as the endpoint address (e.g. the JDBC URL)
+     * If it is not set then, no connection is associated with the asset
+     */
+    static final String ENDPOINT_ADDRESS = "endpointAddress";
+
+    static final String SEND_SCHEMA_TYPES_AS_ENTITIES = "sendSchemaTypesAsEntities";
+
     /**
      * Constructor used to initialize the ConnectorProviderBase with the Java class name of the specific
      * OMRS Connector implementation.
      */
-    public HMSOMRSRepositoryEventMapperProvider() {
-        super();
+    public OMRSDatabasePollingRepositoryEventMapperProvider() {
         Class<?> connectorClass = HMSOMRSRepositoryEventMapper.class;
-        setConnectorClassName(connectorClass.getName());
-        ConnectorType connectorType = super.getConnectorType();
+        super.setConnectorClassName(connectorClass.getName());
+        ConnectorType connectorType = new ConnectorType();
         connectorType.setType(ConnectorType.getConnectorTypeType());
-        connectorType.setGUID(CONNECTOR_TYPE_GUID);
-        connectorType.setQualifiedName(CONNECTOR_TYPE_NAME);
-        connectorType.setDisplayName(CONNECTOR_TYPE_NAME);
-        connectorType.setDescription(CONNECTOR_TYPE_DESC);
+
         connectorType.setConnectorProviderClassName(this.getClass().getName());
-        ArrayList<String> knownConfigProperties = (ArrayList<String>) connectorType.getRecognizedConfigurationProperties();
-        knownConfigProperties.add(METADATA_STORE_USER);
-        knownConfigProperties.add(METADATA_STORE_PASSWORD);
-        knownConfigProperties.add(USE_SSL);
+
+        List<String> knownConfigProperties = new ArrayList<>();
+        knownConfigProperties.add(QUALIFIED_NAME_PREFIX);
+        knownConfigProperties.add(ENDPOINT_ADDRESS);
+        knownConfigProperties.add(REFRESH_TIME_INTERVAL);
+        knownConfigProperties.add(DATABASE_NAME);
+        knownConfigProperties.add(CATALOG_NAME);
+        knownConfigProperties.add(SEND_POLL_EVENTS);
 
         connectorType.setRecognizedConfigurationProperties(knownConfigProperties);
 
