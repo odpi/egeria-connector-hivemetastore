@@ -96,30 +96,34 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
         super.start();
 
         final String methodName = "start";
-        repositoryName = this.repositoryConnector.getRepositoryName();
-        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_STARTING.getMessageDefinition());
+        // synchronise in case the atart occurs while the thread is running accessing the private varioables.
+        // this synchronisation should ensure that all the config is updated together before the polling thread accesses them
+        synchronized (this) {
+            repositoryName = this.repositoryConnector.getRepositoryName();
+            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_STARTING.getMessageDefinition());
 
-        if (!(repositoryConnector instanceof CachingOMRSRepositoryProxyConnector)) {
-            ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.EVENT_MAPPER_IMPROPERLY_INITIALIZED, methodName, null, repositoryConnector.getServerName());
-        }
+            if (!(repositoryConnector instanceof CachingOMRSRepositoryProxyConnector)) {
+                ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.EVENT_MAPPER_IMPROPERLY_INITIALIZED, methodName, null, repositoryConnector.getServerName());
+            }
 
-        this.repositoryHelper = this.repositoryConnector.getRepositoryHelper();
+            this.repositoryHelper = this.repositoryConnector.getRepositoryHelper();
 
-        Map<String, Object> configurationProperties = connectionProperties.getConfigurationProperties();
-        this.userId = connectionProperties.getUserId();
-        if (this.userId == null) {
-            // default
-            this.userId = "OMAGServer";
-        }
-        if (configurationProperties != null) {
-            extractConfigurationProperties(configurationProperties);
+            Map<String, Object> configurationProperties = connectionProperties.getConfigurationProperties();
+            this.userId = connectionProperties.getUserId();
+            if (this.userId == null) {
+                // default
+                this.userId = "OMAGServer";
+            }
+            if (configurationProperties != null) {
+                extractConfigurationProperties(configurationProperties);
 
-        }
-        if (metadataCollection == null) {
-            try {
-                connectTo3rdParty();
-            } catch (RepositoryErrorException e) {
-                ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+            }
+            if (metadataCollection == null) {
+                try {
+                    connectTo3rdParty();
+                } catch (RepositoryErrorException e) {
+                    ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
+                }
             }
         }
 
@@ -233,37 +237,39 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
             if (running.compareAndSet(false, true)) {
                 while (running.get()) {
                     try {
+                         // synchronise the processing to ensure that a start does not change the instance variables under us.
+                        synchronized (this) {
+                            mapperHelper = new MapperHelper(repositoryHelper,
+                                    userId,
+                                    metadataCollectionId,
+                                    repositoryName,
+                                    metadataCollectionName, qualifiedNamePrefix);
 
-                        mapperHelper = new MapperHelper(repositoryHelper,
-                                userId,
-                                metadataCollectionId,
-                                repositoryName,
-                                metadataCollectionName,qualifiedNamePrefix);
+                            getRequiredTypes();
+                            // connect to the 3rd party technoilogy
+                            connectTo3rdParty();
+                            // reset the variables used to accumulate state
+                            cachedRepositoryAccessor = new CachedRepositoryAccessor(userId, repositoryConnector.getServerName(), metadataCollection);
+                            aboveTableEntityListToStore = new ArrayList<>();
+                            aboveTableRelationshipListToStore = new ArrayList<>();
+                            qualifiedTableNameToEntityMap = new HashMap<>();
+                            qualifiedTableNameToRelationshipMap = new HashMap<>();
 
-                        getRequiredTypes();
-                        // connect to the 3rd party technoilogy
-                        connectTo3rdParty();
-                        // reset the variables used to accumulate state
-                        cachedRepositoryAccessor = new CachedRepositoryAccessor(userId, repositoryConnector.getServerName(), metadataCollection);
-                        aboveTableEntityListToStore = new ArrayList<>();
-                        aboveTableRelationshipListToStore = new ArrayList<>();
-                        qualifiedTableNameToEntityMap = new HashMap<>();
-                        qualifiedTableNameToRelationshipMap = new HashMap<>();
+                            // populate the above lists with the database and schema entities and relationships
 
-                        // populate the above lists with the database and schema entities and relationships
+                            baseCanonicalName = catName + SupportedTypes.SEPARATOR_CHAR + dbName;
+                            // collect the entities and relationships above the table(s)
+                            collectEntitiesAndRelationshipsAboveTable();
 
-                        baseCanonicalName = catName + SupportedTypes.SEPARATOR_CHAR + dbName;
-                        // collect the entities and relationships above the table(s) 
-                        collectEntitiesAndRelationshipsAboveTable();
-
-                        // create ConnectionTables. This method uses the Hive client.
-                        // In the future if this event mapper is copied for other technologies - this is the method that needs to be reworking to 
-                        // use the new technology
-                        List<ConnectorTable> connectorTables = getConnectionTablesAndColumnsFrom3rdParty();
-                        // Subsequent processing is not Hive specific. 
-                        convertToConnectorTablesToEntitiesAndRelationships(connectorTables);
-                        refreshRepositoryAndSendBatchEvent();
-
+                            // create ConnectionTables. This method uses the Hive client.
+                            // In the future if this event mapper is copied for other technologies - this is the method that needs to be reworking to
+                            // use the new technology
+                            List<ConnectorTable> connectorTables = getConnectionTablesAndColumnsFrom3rdParty();
+                            // Subsequent processing is not Hive specific.
+                            convertToConnectorTablesToEntitiesAndRelationships(connectorTables);
+                            refreshRepositoryAndSendBatchEvent();
+                        }
+                        // come out of synchronization when waiting.
                         //  wait the polling interval.
                         auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_PRE_WAIT.getMessageDefinition());
                         try {
