@@ -2,6 +2,6 @@
 /* Copyright Contributors to the ODPi Egeria project. */
 
 /**
- * Defines and implements the event mapper for Hive Metastore, this includes polling capability.
+ * Defines and implements the event mapper for Hive Metastore.
  */
 package org.odpi.egeria.connectors.hms.eventmapper;
