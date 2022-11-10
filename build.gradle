@@ -107,7 +107,7 @@ dependencies {
     compileOnly "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
     compileOnly "org.odpi.egeria:repository-services-apis:${egeriaversion}"
     compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
-    implementation "org.odpi.egeria:egeria.connector.repository.caching.database.eventmapper:${cachingdatabaseeventmapperversion}"
+    implementation "org.odpi.egeria:egeria-connector-event-mapper-polling-database:${cachingdatabaseeventmapperversion}"
 
     implementation 'org.apache.thrift:libthrift:0.13.0'
 
