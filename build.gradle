@@ -38,7 +38,7 @@ repositories {
         url "https://maven.atlassian.com/3rdparty"
     }
     // uncomment to pick up from local ~/.m2 - but can be unpredictable. recommend to use maven central and snapshots
-    //   mavenLocal()
+      mavenLocal()
 }
 
 // ensures we pick up the very latest snapshots when built
@@ -75,7 +75,7 @@ description = 'Egeria Connector for Hive Metastore'
 // TODO: Versions already in pom can be removed
 ext {
     egeriaversion = '3.12'
-    cachingdatabaseeventmapperversion = '1.0-SNAPSHOT'
+    cachingdatabaseeventmapperversion = '3.13-SNAPSHOT'
     slf4jVersion = '1.7.36'
     jacksonVersion = '2.13.2'
     jupiterVersion = '5.8.2'
@@ -107,7 +107,7 @@ dependencies {
     compileOnly "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
     compileOnly "org.odpi.egeria:repository-services-apis:${egeriaversion}"
     compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
-    implementation "org.odpi.egeria:egeria-connector-event-mapper-polling-database:${cachingdatabaseeventmapperversion}"
+    compileOnly "org.odpi.egeria:egeria-connector-event-mapper-polling-database:${cachingdatabaseeventmapperversion}"
 
     implementation 'org.apache.thrift:libthrift:0.13.0'
 

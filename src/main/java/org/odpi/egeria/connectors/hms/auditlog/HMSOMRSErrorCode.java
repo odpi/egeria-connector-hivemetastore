@@ -37,10 +37,10 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
     final private ExceptionMessageDefinition messageDefinition;
 
     /**
-     * The constructor for FileOMRSErrorCode expects to be passed one of the enumeration rows defined in
-     * FileOMRSErrorCode above.   For example:
+     * The constructor for HMSOMRSErrorCode expects to be passed one of the enumeration rows defined in
+     * HMSOMRSErrorCode above.   For example:
      *
-     *     FileOMRSErrorCode   errorCode = FileOMRSErrorCode.NULL_INSTANCE;
+     *     HMSOMRSErrorCode   errorCode = HMSOMRSErrorCode.NULL_INSTANCE;
      *
      * This will expand out to the 5 parameters shown below.
      *
@@ -88,7 +88,7 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
      */
     @Override
     public String toString() {
-        return "FileOMRSErrorCode{" +
+        return "HMSOMRSErrorCode{" +
                 "messageDefinition=" + messageDefinition +
                 '}';
     }

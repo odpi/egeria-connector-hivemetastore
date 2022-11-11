@@ -7,7 +7,7 @@ import org.odpi.openmetadata.frameworks.auditlog.messagesets.AuditLogMessageSet;
 import org.odpi.openmetadata.repositoryservices.auditlog.OMRSAuditLogRecordSeverity;
 
 /**
- * The FileOMRSAuditCode is used to define the message content for the OMRS Audit Log.
+ * The HMSOMRSAuditCode is used to define the message content for the OMRS Audit Log.
  *
  * The 5 fields in the enum are:
  * <ul>
