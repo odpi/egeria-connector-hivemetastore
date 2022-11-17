@@ -10,11 +10,11 @@ import java.util.List;
 
 /**
  * In the Open Connector Framework (OCF), a ConnectorProvider is a factory for a specific type of connector.
- * The ApacheAtlasOMRSRepositoryEventMapperProvider is the connector provider for the ApacheAtlasOMRSRepositoryEventMapperProvider.
+ * The HMSOMRSRepositoryEventMapperProvider is the connector provider for the HMSOMRSRepositoryEventMapperProvider.
  * It extends OMRSRepositoryEventMapperProviderBase which in turn extends the OCF ConnectorProviderBase.
  * ConnectorProviderBase supports the creation of connector instances.
  *
- * The ApacheAtlasOMRSRepositoryEventMapperProvider must initialize ConnectorProviderBase with the Java class
+ * The HMSOMRSRepositoryEventMapperProvider must initialize ConnectorProviderBase with the Java class
  * name of the OMRS Connector implementation (by calling super.setConnectorClassName(className)).
  * Then the connector provider will work.
  */
@@ -35,6 +35,8 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
     static final String USE_SSL = "useSSL";
 
     static final String SEND_POLL_EVENTS = "sendPollEvents";
+
+    static final String CACHE_INTO_CACHING_REPOSITORY = "cacheIntoCachingRepository";
 
     /**
      * If this is set then we use this as the endpoint address (e.g. the JDBC URL)
@@ -66,6 +68,7 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
         knownConfigProperties.add(DATABASE_NAME);
         knownConfigProperties.add(CATALOG_NAME);
         knownConfigProperties.add(SEND_POLL_EVENTS);
+        knownConfigProperties.add(CACHE_INTO_CACHING_REPOSITORY);
         knownConfigProperties.add(METADATA_STORE_USER);
         knownConfigProperties.add(METADATA_STORE_PASSWORD);
         knownConfigProperties.add(USE_SSL);

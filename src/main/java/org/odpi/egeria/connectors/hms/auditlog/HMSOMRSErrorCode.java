@@ -8,7 +8,7 @@ import org.odpi.openmetadata.frameworks.auditlog.messagesets.ExceptionMessageSet
 public enum HMSOMRSErrorCode implements ExceptionMessageSet {
 
     INVALID_CLASSIFICATION_FOR_ENTITY(400, "OMRS-HMS-REPOSITORY-400-006",
-            "Sample file repository proxy is unable to assign a classification of type {0} to an entity of type {1} because the classification type is not valid for this type of entity",
+            "HMS repository proxy is unable to assign a classification of type {0} to an entity of type {1} because the classification type is not valid for this type of entity",
             "The system is unable to classify an entity because the ClassificationDef for the classification does not list this entity type, or one of its super-types.",
             "Update the ClassificationDef to include the entity's type and rerun the request. Alternatively use a different classification."),
     INVALID_RELATIONSHIP_ENDS(400, "OMRS-HMS-REPOSITORY-400-047",
@@ -159,10 +159,10 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
     final private ExceptionMessageDefinition messageDefinition;
 
     /**
-     * The constructor for FileOMRSErrorCode expects to be passed one of the enumeration rows defined in
-     * FileOMRSErrorCode above.   For example:
+     * The constructor for HMSOMRSErrorCode expects to be passed one of the enumeration rows defined in
+     * HMSOMRSErrorCode above.   For example:
      *
-     *     FileOMRSErrorCode   errorCode = FileOMRSErrorCode.NULL_INSTANCE;
+     *     HMSOMRSErrorCode   errorCode = HMSOMRSErrorCode.NULL_INSTANCE;
      *
      * This will expand out to the 5 parameters shown below.
      *
@@ -210,7 +210,7 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
      */
     @Override
     public String toString() {
-        return "FileOMRSErrorCode{" +
+        return "HMSOMRSErrorCode{" +
                 "messageDefinition=" + messageDefinition +
                 '}';
     }
