@@ -60,7 +60,7 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
     protected OMRSMetadataCollection metadataCollection = null;
 
     private String repositoryName = null;
-    private String catName = "spark";
+    private String catName = "hive";
     private String dbName = "default";
     private boolean sendPollEvents = false;
     private boolean cacheIntoCachingRepository = true;
@@ -70,7 +70,6 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
 
     private PollingThread pollingThread;
     private String databaseGUID;
-    private final String className = this.getClass().getName();
 
     /**
      * Default constructor
@@ -173,7 +172,7 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
     private void extractConfigurationProperties(Map<String, Object> configurationProperties) {
         Integer configuredRefreshInterval = (Integer) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.REFRESH_TIME_INTERVAL);
         if (configuredRefreshInterval != null) {
-            refreshInterval = configuredRefreshInterval * 1000;
+            refreshInterval = configuredRefreshInterval * 1000 * 60;
         }
         String configuredQualifiedNamePrefix = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX);
         if (configuredQualifiedNamePrefix != null) {
@@ -280,18 +279,13 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
                             if (sendPollEvents) {
                                 issueBatchEvent(aboveTableEntityList, aboveTableRelationshipList);
                             }
-
-                            // create ConnectionTables.
-                            // In the future if this event mapper is copied for other technologies - this is the method that needs to be reworking to
-                            // use the new technology
-                            List<ConnectorTable> connectorTables = new ArrayList<>();
+                            
                             try {
                                 List<String> tableNames = getTableNamesFrom3rdParty(catName, dbName, baseCanonicalName);
                                 if (tableNames != null && !tableNames.isEmpty()) {
                                     // create each table and relationship
                                     for (String tableName : tableNames) {
                                         ConnectorTable connectorTable = getTableFrom3rdParty(catName, dbName, baseCanonicalName, tableName);
-                                        connectorTables.add(connectorTable);
                                         qualifiedTableNameToEntityMap = new HashMap<>();
                                         qualifiedTableNameToRelationshipMap = new HashMap<>();
                                         convertToConnectorTableToEntitiesAndRelationships(methodName, connectorTable);
