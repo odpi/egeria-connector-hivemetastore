@@ -78,7 +78,7 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
         super();
     }
 
-    public String getUserId() {
+    synchronized public String getUserId() {
         return userId;
     }
 
@@ -279,7 +279,7 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
                             if (sendPollEvents) {
                                 issueBatchEvent(aboveTableEntityList, aboveTableRelationshipList);
                             }
-                            
+
                             try {
                                 List<String> tableNames = getTableNamesFrom3rdParty(catName, dbName, baseCanonicalName);
                                 if (tableNames != null && !tableNames.isEmpty()) {
