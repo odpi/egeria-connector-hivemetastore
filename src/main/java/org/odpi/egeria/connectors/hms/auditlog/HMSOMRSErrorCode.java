@@ -130,11 +130,6 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
                                   "The system will shutdown the server",
                                   "ensure you are using a repository that supports the required types."),
 
-
-//    TYPEDEF_NOT_SUPPORTED(404, "OMRS-HMS-REPOSITORY-404-001 ",
-//            "On Server {0} for request {1}, the typedef \"{3}\" is not supported by repository \"{1}\"",
-//            "The system is currently unable to support the requested the typedef.",
-//            "Request support through Egeria GitHub issue."),
     ENTITY_NOT_KNOWN(404, "OMRS-HMS-REPOSITORY-404-002 ",
             "On Server {0} for request {1}, the entity identified with guid {0} is not known to the open metadata repository {2}",
             "The system is unable to retrieve the properties for the requested entity because the supplied guid is not recognized.",
