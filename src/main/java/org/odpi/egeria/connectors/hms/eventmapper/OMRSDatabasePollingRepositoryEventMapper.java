@@ -494,7 +494,7 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
                     connectorTable.getName(),
                     tableQualifiedName,
                     null,
-                    true);
+                    convertToConnectorTableToEntitiesAndRelationships       true);
 
 
             tableEntity.setCreateTime(connectorTable.getCreateTime());
