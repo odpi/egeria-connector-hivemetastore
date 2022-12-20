@@ -487,7 +487,7 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
             }
         }
 
-        private void convertToConnectorTableToEntitiesAndRelationships(String methodName, ConnectorTable connectorTable) throws ConnectorCheckedException, TypeErrorException {
+        synchronized private void convertToConnectorTableToEntitiesAndRelationships(String methodName, ConnectorTable connectorTable) throws ConnectorCheckedException, TypeErrorException {
             String tableQualifiedName = connectorTable.getQualifiedName();
             EntityDetail tableEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                     SupportedTypes.TABLE,
