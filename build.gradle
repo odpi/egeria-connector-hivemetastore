@@ -74,7 +74,7 @@ description = 'Egeria Connector for Hive Metastore'
 // Versions - most should be picked up from the import of the egeria base POM
 // TODO: Versions already in pom can be removed
 ext {
-    egeriaversion = '3.12'
+    egeriaversion = '3.14'
     cachingconnectorversion = '1.0-SNAPSHOT'
     slf4jVersion = '1.7.36'
     jacksonVersion = '2.13.2'
