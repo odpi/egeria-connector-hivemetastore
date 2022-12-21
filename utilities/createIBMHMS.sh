@@ -1,16 +1,21 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright Contributors to the ODPi Egeria project.
 
-# This script has been tested on a Mac and is for use in development. This is not the way to deploy Egeria in production,
-# where something like a Kubenetes approach would be more appropriate.
-# It assumes there is :
-#  - a working Kafka on the system
-#  - egeria source code build in a folder called egeria from the home directory.
+# This script is supplied as-is for use by developers to create a local Egeria deployment incuding the hms connector built to talk to the IBM Data Engine.
 
-# In the home directory it creates or uses a folder called 'testplatforms' to build an Egeria deployment
-# It brings down the Egeria hive connector, downloads the IBM jar and builds the connector and starts the platform with that jar in.
-# having constructed the Egeria deployment, it starts the Egeria OMAG platform.
+# This script assumes
+#  -  there is a working Kafka on the system
+#  -  there is a folder in the home directory called a egeria, which has a built version of Egeria. See https://egeria-project.org/education/egeria-dojo/developer/overview/?h=building+egeria for information on this.
+# The script
+#  -  git clones the egeria hive connector code
+#  -  downloads the IBM jar
+#  - amends the build file in a temporary folder
+#  - builds and builds the connector knitting in the IBM jar file
+#  - there should now be an Egeria deployment in folder  ~/ibm-HMS/testplatform which is started
 
-# Egeria version - this can updated to pickup later version of Egeria.
+
+# Egeria version
 version=3.15
 
 cd ~
@@ -50,6 +55,3 @@ cp ../../egeria/open-metadata-implementation/server-chassis/server-chassis-sprin
 cp ../src/egeria-connector-hivemetastore/build/libs/egeria-connector-hivemetastore-1.0-SNAPSHOT-jar-with-dependencies.jar lib
 
 java -agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n -Dserver.port=9443 -Dloader.path="lib" -jar server-chassis-spring-${version}-SNAPSHOT.jar &
-
-
-
