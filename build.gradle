@@ -17,11 +17,11 @@ plugins {
     id 'idea'
     id 'maven-publish'
     // Checks for unnecessary & problematic dependencies
-    id 'com.autonomousapps.dependency-analysis' version "1.10.0"
+    id 'com.autonomousapps.dependency-analysis' version "1.13.1"
     // helps resolve log implementation clashes
     id 'dev.jacomet.logging-capabilities' version "0.10.0"
     // This plugin helps resolve jakarta/javax clashes
-    id 'de.jjohannes.java-ecosystem-capabilities' version "0.4"
+    id 'de.jjohannes.java-ecosystem-capabilities' version "0.5"
     id "org.sonarqube" version "3.4.0.2513"
 }
 
@@ -89,7 +89,7 @@ ext {
 dependencies {
     // authoritative versions for dependencyManagement provided by egeria core - this uses the dependencyManagement
     // in the main Egeria pom to define the versions of the dependencies.
-    implementation enforcedPlatform("org.odpi.egeria:egeria:${egeriaversion}")
+    implementation platform("org.odpi.egeria:egeria:${egeriaversion}")
 //    implementation "org.odpi.egeria:egeria:${egeriaversion}"
 
     // Only used for build - already present in server chassis at runtime - similar to 'provided' with maven
