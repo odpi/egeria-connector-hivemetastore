@@ -35,7 +35,7 @@ cd ${temp_folder} || exit
 mkdir src
 cd src || exit
 git clone  https://github.com/odpi/egeria-connector-hivemetastore
-cd egeria-connector-hivemetastore
+cd egeria-connector-hivemetastore || exit
 
 mkdir libs
 cd libs || exit
