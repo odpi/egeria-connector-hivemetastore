@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Contributors to the ODPi Egeria project.
 
-# This script is supplied as-is for use by developers to create a local Egeria deployment incuding the hms connector built to talk to the IBM Data Engine.
+# This script is supplied as-is for use by developers to create a local Egeria deployment including the hms connector built to talk to the IBM Cloud® Data Engine.
 
 # This script assumes
 #  -  there is a working Kafka on the system
@@ -11,7 +11,8 @@
 #  - git clones the egeria hive connector code
 #  - downloads the IBM jar
 #  - amends the build file in a temporary folder
-#  - builds and builds the connector knitting in the IBM jar file
+#  - builds and builds the HMS connector knitting in the IBM jar file
+#  - clones the caching connector and builds it
 #  - there should now be an Egeria deployment in folder  ~/ibm-HMS/testplatform which is started
 
 
