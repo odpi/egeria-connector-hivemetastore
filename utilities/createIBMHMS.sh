@@ -47,9 +47,21 @@ sed "/Standard version/ s=Standard=IBM=" build.gradle.org2 >build.gradle
 rm build.gradle.org
 rm build.gradle.org2
 ./gradlew clean build
+
+cd ~/${temp_folder}/src || exit
+
+# clone the caching repository
+git clone  https://github.com/odpi/egeria-connector-omrs-caching
+cd egeria-connector-omrs-caching || exit
+# build caching repository
+./gradlew clean build
+
 cd ~/${temp_folder} || exit
+
+# create the testplatform folder, where we will assemble the files required for runtime
 mkdir testplatform
 cd testplatform || exit
+
 mkdir lib
 
 # copy over server chassis
@@ -58,7 +70,10 @@ cp ~/egeria/open-metadata-implementation/server-chassis/server-chassis-spring/bu
 # copy over trust store
 cp ~/egeria/open-metadata-implementation/server-chassis/server-chassis-spring/src/main/resources/truststore.p12 .
 
-# copy over connector jar
-cp ../src/egeria-connector-hivemetastore/build/libs/egeria-connector-hivemetastore-1.0-SNAPSHOT-jar-with-dependencies.jar lib
+# copy over hms connector jar into the lib folder
+cp ~/${temp_folder}/src/egeria-connector-hivemetastore/build/libs/egeria-connector-hivemetastore-1.0-SNAPSHOT-jar-with-dependencies.jar lib
+# copy over caching connector jar into the lib folder
+cp ~/${temp_folder}/src/egeria-connector-omrs-caching/build/libs/egeria-connector-omrs-caching-1.0-SNAPSHOT-jar-with-dependencies.jar lib
 
+# start the platform with the above jar files
 java -agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=n -Dserver.port=9443 -Dloader.path="lib" -jar server-chassis-spring-${version}-SNAPSHOT.jar &
