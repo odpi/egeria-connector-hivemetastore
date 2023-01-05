@@ -64,8 +64,6 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
     private String dbName = "default";
     private boolean sendPollEvents = false;
     private boolean cacheIntoCachingRepository = true;
-    private boolean sendEntitiesForSchemaType = false;
-
     private String configuredEndpointAddress = null;
 
     private PollingThread pollingThread;
@@ -127,7 +125,7 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
     }
 
     /**
-     * Connect the the 3rd party technology
+     * Connect the 3rd party technology
      * @throws RepositoryErrorException repository exception
      * @throws ConnectorCheckedException connector exception
      */
@@ -197,11 +195,6 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
             cacheIntoCachingRepository = configuredCache;
         }
         configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS);
-
-        Boolean configuredSendEntitiesForSchemaType = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.SEND_SCHEMA_TYPES_AS_ENTITIES);
-        if (configuredSendEntitiesForSchemaType != null) {
-            sendEntitiesForSchemaType = true;
-        }
 
     }
 
@@ -504,10 +497,10 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
             if (tableClassifications == null) {
                 tableClassifications = new ArrayList<>();
             }
-            if (!sendEntitiesForSchemaType) {
-                Classification classification = mapperHelper.createTypeEmbeddedClassificationForTable(methodName, tableEntity);
-                tableClassifications.add(classification);
-            }
+
+            Classification classification = mapperHelper.createTypeEmbeddedClassificationForTable(methodName, tableEntity);
+            tableClassifications.add(classification);
+
             if ("VIRTUAL_VIEW".equals(connectorTable.getType())) {
                 //Indicate that this hmsTable is a view using the classification
                 tableClassifications.add(mapperHelper.createCalculatedValueClassification("refreshRepository", tableEntity, connectorTable.getHmsViewOriginalText()));
@@ -519,28 +512,7 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
             saveEntityReferenceCopyForTable(tableEntity, tableQualifiedName);
             String tableGuid = tableEntity.getGUID();
 
-            String tableTypeGUID = null; // only filled in when sendEntitiesForSchemaType = true
-            if (sendEntitiesForSchemaType) {
-                // add schema type entity
-                EntityDetail tableEntityType = mapperHelper.getEntityDetailSkeleton(methodName,
-                        SupportedTypes.RELATIONAL_TABLE_TYPE,
-                        connectorTable.getName() + SupportedTypes.SEPARATOR_CHAR + "type",
-                        connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.SEPARATOR_CHAR + "type", // double separator to the type qualified name does not clash with an attribute qualified name
-                        null,
-                        true);
-
-                saveEntityReferenceCopyForTable(tableEntityType, tableQualifiedName);
-                tableTypeGUID = tableEntityType.getGUID();
-                Relationship relationship =mapperHelper.createReferenceRelationship(SupportedTypes.SCHEMA_ATTRIBUTE_TYPE,
-                        tableEntity.getGUID(),
-                        SupportedTypes.TABLE,
-                        tableTypeGUID,
-                        SupportedTypes.RELATIONAL_TABLE_TYPE);
-                saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
-            }
-
             // relationship
-
 
             Relationship relationship =mapperHelper.createReferenceRelationship(SupportedTypes.ATTRIBUTE_FOR_SCHEMA,
                     relationalDBTypeGuid,
@@ -563,57 +535,24 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
                         null,
                         true);
                 String dataType = connectorColumn.getType();
-                if (!sendEntitiesForSchemaType) {
-                    List<Classification> columnClassifications = columnEntity.getClassifications();
-                    if (columnClassifications == null) {
-                        columnClassifications = new ArrayList<>();
-                    }
-
-                    columnClassifications.add(mapperHelper.createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
-
-                    columnEntity.setClassifications(columnClassifications);
+                List<Classification> columnClassifications = columnEntity.getClassifications();
+                if (columnClassifications == null) {
+                    columnClassifications = new ArrayList<>();
                 }
+
+                columnClassifications.add(mapperHelper.createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
+
+                columnEntity.setClassifications(columnClassifications);
+
                 saveEntityReferenceCopyForTable(columnEntity, tableQualifiedName);
-                if (sendEntitiesForSchemaType) {
-                    // add schema type entity
-                    EntityDetail columnEntityType = mapperHelper.getEntityDetailSkeleton(methodName,
-                            SupportedTypes.RELATIONAL_COLUMN_TYPE,
-                            columnName + SupportedTypes.SEPARATOR_CHAR + "type",
-                            connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName + SupportedTypes.SEPARATOR_CHAR + "(type)",
-                            null,
-                            true);
-                    if (dataType != null) {
-                        InstanceProperties instanceProperties = columnEntityType.getProperties();
-                        repositoryHelper.addStringPropertyToInstance(methodName, instanceProperties, "dataType", dataType, methodName);
-                        columnEntityType.setProperties(instanceProperties);
-                    }
 
-                    saveEntityReferenceCopyForTable(columnEntityType, tableQualifiedName);
-                    // create column to column type relationship
-                    relationship = mapperHelper.createReferenceRelationship(SupportedTypes.SCHEMA_ATTRIBUTE_TYPE,
-                            columnEntity.getGUID(),
-                            SupportedTypes.COLUMN,
-                            columnEntityType.getGUID(),
-                            SupportedTypes.RELATIONAL_COLUMN_TYPE);
-                    saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
-
-                    // create hmsTable type to column relationship
-                    relationship = mapperHelper.createReferenceRelationship(SupportedTypes.ATTRIBUTE_FOR_SCHEMA,
-                            tableTypeGUID,
-                            SupportedTypes.RELATIONAL_TABLE_TYPE,
-                            columnEntity.getGUID(),
-                            SupportedTypes.COLUMN);
-                    saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
-
-                } else {
-                    // relate the column to the table
-                    relationship=mapperHelper.createReferenceRelationship(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE,
-                            tableGuid,
-                            SupportedTypes.TABLE,
-                            columnEntity.getGUID(),
-                            SupportedTypes.COLUMN);
-                    saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
-                }
+                // relate the column to the table
+                relationship=mapperHelper.createReferenceRelationship(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE,
+                        tableGuid,
+                        SupportedTypes.TABLE,
+                        columnEntity.getGUID(),
+                        SupportedTypes.COLUMN);
+                saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
             }
         }
 
