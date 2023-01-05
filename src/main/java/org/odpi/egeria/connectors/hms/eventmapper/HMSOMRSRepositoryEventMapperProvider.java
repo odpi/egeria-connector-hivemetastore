@@ -44,8 +44,6 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
      */
     static final String ENDPOINT_ADDRESS = "endpointAddress";
 
-    static final String SEND_SCHEMA_TYPES_AS_ENTITIES = "sendSchemaTypesAsEntities";
-
     /**
      * Constructor used to initialize the ConnectorProviderBase with the Java class name of the specific
      * OMRS Connector implementation.
