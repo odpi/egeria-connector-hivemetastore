@@ -10,11 +10,11 @@ import java.util.List;
 
 /**
  * In the Open Connector Framework (OCF), a ConnectorProvider is a factory for a specific type of connector.
- * The ApacheAtlasOMRSRepositoryEventMapperProvider is the connector provider for the ApacheAtlasOMRSRepositoryEventMapperProvider.
+ * The HMSOMRSRepositoryEventMapperProvider is the connector provider for the HMSOMRSRepositoryEventMapperProvider.
  * It extends OMRSRepositoryEventMapperProviderBase which in turn extends the OCF ConnectorProviderBase.
  * ConnectorProviderBase supports the creation of connector instances.
  *
- * The ApacheAtlasOMRSRepositoryEventMapperProvider must initialize ConnectorProviderBase with the Java class
+ * The HMSOMRSRepositoryEventMapperProvider must initialize ConnectorProviderBase with the Java class
  * name of the OMRS Connector implementation (by calling super.setConnectorClassName(className)).
  * Then the connector provider will work.
  */
@@ -36,11 +36,13 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
 
     static final String SEND_POLL_EVENTS = "sendPollEvents";
 
+    static final String CACHE_INTO_CACHING_REPOSITORY = "cacheIntoCachingRepository";
+
     /**
-     * If this is set then we use this as the root of the endpoint address
+     * If this is set then we use this as the endpoint address (e.g. the JDBC URL)
      * If it is not set then, no connection is associated with the asset
      */
-    static final String ENDPOINT_ADDRESS_PREFIX = "EndpointAddressPrefix";
+    static final String ENDPOINT_ADDRESS = "endpointAddress";
 
     /**
      * Constructor used to initialize the ConnectorProviderBase with the Java class name of the specific
@@ -59,11 +61,12 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
 
         List<String> knownConfigProperties = new ArrayList<>();
         knownConfigProperties.add(QUALIFIED_NAME_PREFIX);
-        knownConfigProperties.add(ENDPOINT_ADDRESS_PREFIX);
+        knownConfigProperties.add(ENDPOINT_ADDRESS);
         knownConfigProperties.add(REFRESH_TIME_INTERVAL);
         knownConfigProperties.add(DATABASE_NAME);
         knownConfigProperties.add(CATALOG_NAME);
         knownConfigProperties.add(SEND_POLL_EVENTS);
+        knownConfigProperties.add(CACHE_INTO_CACHING_REPOSITORY);
         knownConfigProperties.add(METADATA_STORE_USER);
         knownConfigProperties.add(METADATA_STORE_PASSWORD);
         knownConfigProperties.add(USE_SSL);
