@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "5a1196a7-9189-41df-8f46-4dcf1d7450fb",
+		"_postman_id": "04b9d69a-14cd-4d4f-a19b-a3d255c3d474",
 		"name": "HMS Repository Proxy",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "2330095"
@@ -27,7 +27,7 @@
 					"raw": "{\"producer\":{\"bootstrap.servers\":\"localhost:9092\"},\"consumer\":{\"bootstrap.servers\":\"localhost:9092\"}}"
 				},
 				"url": {
-					"raw": "{{baseURL}}/open-metadata/admin-services/users/{{user}}/servers/{{server}}/event-bus?connectorProvider=org.odpi.openmetadata.adapters.eventbus.topic.kafka.KafkaOpenMetadataTopicProvider&topicURLRoot=OMRSTopic",
+					"raw": "{{baseURL}}/open-metadata/admin-services/users/{{user}}/servers/{{server}}/event-bus?connectorProvider=org.odpi.openmetadata.adapters.eventbus.topic.kafka.KafkaOpenMetadataTopicProvider&topicURLRoot=egeriaTopics",
 					"host": [
 						"{{baseURL}}"
 					],
@@ -47,7 +47,7 @@
 						},
 						{
 							"key": "topicURLRoot",
-							"value": "OMRSTopic"
+							"value": "egeriaTopics"
 						}
 					]
 				},
@@ -227,7 +227,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"class\": \"Connection\",\n    \"connectorType\": {\n        \"class\": \"ConnectorType\",\n        \"connectorProviderClassName\": \"org.odpi.egeria.connectors.hms.eventmapper.HMSOMRSRepositoryEventMapperProvider\"\n    },\n    \"endpoint\": {\n        \"class\": \"Endpoint\",\n        \"address\": \"{{hmsep}}\"\n    },\n    \"configurationProperties\": {\n        \"qualifiedNamePrefix\": \"{{qualifiedNamePrefix}}\",\n        \"refreshTimeInterval\": {{refreshTimeInterval}}, \n        \"CatalogName\": \"{{hmsCatalogName}}\", \n        \"DatabaseName\": \"{{hmsDatabaseName}}\",   \n        \"MetadataStoreUserId\": \"{{hmsUserid}}\",\n        \"MetadataStorePassword\": \"{{hmsPassword}}\",\n         \"endpointAddress\": \"{{hmssourceep}}\",\n        \"useSSL\": {{useSSL}},\n        \"sendPollEvents\": {{sendPollEvents}},\n        \"sendSchemaTypesAsEntities\": {{sendSchemaTypesAsEntities}}\n\n    },\n    \"guid\": \"fd923c81-4bfb-445f-a866-2ae85b2bdefa\",\n    \"qualifiedName\": \"OMRS Hive Metastore Event Mapper Connector\",\n    \"DisplayName\": \"OMRS Hive Metastore Event Mapper Connector that polls for content.\"\n}"
+					"raw": "{\n    \"class\": \"Connection\",\n    \"connectorType\": {\n        \"class\": \"ConnectorType\",\n        \"connectorProviderClassName\": \"org.odpi.egeria.connectors.hms.eventmapper.HMSOMRSRepositoryEventMapperProvider\"\n    },\n    \"endpoint\": {\n        \"class\": \"Endpoint\",\n        \"address\": \"{{hmsep}}\"\n    },\n    \"configurationProperties\": {\n        \"cacheIntoCachingRepository\": {{cacheIntoCachingRepository}},\n        \"CatalogName\": \"{{hmsCatalogName}}\", \n        \"DatabaseName\": \"{{hmsDatabaseName}}\",   \n        \"endpointAddress\": \"{{hmssourceep}}\",\n        \"qualifiedNamePrefix\": \"{{qualifiedNamePrefix}}\",\n        \"refreshTimeInterval\": {{refreshTimeInterval}}, \n        \"sendPollEvents\": {{sendPollEvents}},\n\n        \"useSSL\": {{useSSL}},\n        \"MetadataStoreUserId\": \"{{hmsUserid}}\",\n        \"MetadataStorePassword\": \"{{hmsPassword}}\" \n    },\n    \"guid\": \"fd923c81-4bfb-445f-a866-2ae85b2bdefa\",\n    \"qualifiedName\": \"OMRS Hive Metastore Event Mapper Connector\",\n    \"DisplayName\": \"OMRS Hive Metastore Event Mapper Connector that polls for content.\"\n}"
 				},
 				"url": {
 					"raw": "{{baseURL}}/open-metadata/admin-services/users/{{user}}/servers/{{server}}/local-repository/event-mapper-connection",
@@ -391,8 +391,23 @@
 			"type": "string"
 		},
 		{
-			"key": "sendSchemaTypesAsEntities",
+			"key": "cacheIntoCachingRepository",
 			"value": "false",
+			"type": "string"
+		},
+		{
+			"key": "hmsep",
+			"value": "thrift://test",
+			"type": "string"
+		},
+		{
+			"key": "hmsUserid",
+			"value": "crn:test",
+			"type": "string"
+		},
+		{
+			"key": "hmsPassword",
+			"value": "a password",
 			"type": "string"
 		}
 	]
