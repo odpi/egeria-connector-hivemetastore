@@ -186,12 +186,12 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
         }
 
         Boolean configuredSendPollEvents = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS);
-        if (configuredSendPollEvents == null) {
+        if (configuredSendPollEvents != null) {
             sendPollEvents = configuredSendPollEvents;
         }
 
         Boolean configuredCache = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY);
-        if (configuredCache == null) {
+        if (configuredCache != null) {
             cacheIntoCachingRepository = configuredCache;
         }
         configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS);
@@ -511,8 +511,6 @@ abstract public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepos
 
             saveEntityReferenceCopyForTable(tableEntity, tableQualifiedName);
             String tableGuid = tableEntity.getGUID();
-
-            String tableTypeGUID = null; // only filled in when sendEntitiesForSchemaType = true
 
             // relationship
 
