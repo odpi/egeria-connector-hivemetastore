@@ -106,6 +106,7 @@ public class HMSOMRSRepositoryEventMapper extends OMRSDatabasePollingRepositoryE
             }
             metadataCollection = this.repositoryConnector.getMetadataCollection();
             metadataCollectionId = metadataCollection.getMetadataCollectionId(getUserId());
+            metadataCollectionName = localServerName;
         }
     }
 

@@ -42,6 +42,8 @@ public class MapperHelper {
                     InstanceProvenanceType.LOCAL_COHORT,
                     userId,
                     relationshipTypeName);
+            relationship.setMetadataCollectionName(metadataCollectionName);
+
             // leaving the version as 1 - until we have attributes we need to update
         } catch (TypeErrorException e) {
             ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.TYPE_ERROR_EXCEPTION, methodName, e);
@@ -63,7 +65,6 @@ public class MapperHelper {
         //end 2
         EntityProxy entityProxy2 = getEntityProxySkeleton(end2GUID, end2TypeName);
         relationship.setEntityTwoProxy(entityProxy2);
-
 
         return relationship;
 
@@ -147,6 +148,7 @@ public class MapperHelper {
         // set the provenance as local cohort
         entityToAdd.setInstanceProvenanceType(InstanceProvenanceType.LOCAL_COHORT);
         entityToAdd.setMetadataCollectionId(metadataCollectionId);
+        entityToAdd.setMetadataCollectionName(metadataCollectionName);
 
         TypeDef typeDef = repositoryHelper.getTypeDefByName(methodName, typeName);
 
