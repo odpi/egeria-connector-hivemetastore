@@ -457,7 +457,7 @@ abstract public class OMRSEventProducer
 
         List<Classification> tableClassifications = tableEntity.getClassifications();
         if (tableClassifications == null) {
-            tableClassifications = new ArrayList<>();
+            tableClassifications = new ArrayList<>(); 
         }
 
         Classification classification = mapperHelper.createTypeEmbeddedClassificationForTable(methodName, tableEntity);
