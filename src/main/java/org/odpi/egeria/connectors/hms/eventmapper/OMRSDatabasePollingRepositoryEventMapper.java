@@ -90,6 +90,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
                 // default
                 userId = "OMAGServer";
             }
+
             omrsEventProducer = new HMSOMRSEventProducer(auditLog,
                     repositoryHelper,
                     repositoryConnector,

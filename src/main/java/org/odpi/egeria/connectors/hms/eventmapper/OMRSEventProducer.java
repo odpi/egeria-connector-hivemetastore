@@ -103,7 +103,7 @@ abstract public class OMRSEventProducer
                              OMRSRepositoryEventProcessor repositoryEventProcessor,
                              Map<String, Object> configurationProperties,
                              EndpointProperties endpoint,
-                             String userId) {
+                             String userId) throws ConnectorCheckedException {
         this.auditLog = auditLog;
         this.repositoryHelper = repositoryHelper;
         this.repositoryConnector =  repositoryConnector;
@@ -145,7 +145,8 @@ abstract public class OMRSEventProducer
      * @param configurationProperties map of Egeria configuration variables.
      */
     @SuppressWarnings("unchecked")
-    protected void extractConfigurationProperties(Map<String, Object> configurationProperties) {
+    protected void extractConfigurationProperties(Map<String, Object> configurationProperties) throws ConnectorCheckedException {
+        String methodName = "extractConfigurationProperties";
         if (configurationProperties == null) {
             return;
         }
@@ -173,17 +174,14 @@ abstract public class OMRSEventProducer
             cacheIntoCachingRepository = configuredCache;
         }
         configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS);
-        // MapPropertyValue configuredConnectionSecureProperties = (MapPropertyValue) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES);
-
-        //configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES).get("mapValues").get("instanceProperties").get("ChannelId").get("primitiveValue").value.toString()
         LinkedHashMap<String, String> configuredConnectionSecureProperties = null;
         try {
            configuredConnectionSecureProperties = (LinkedHashMap<String, String>) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES);
         } catch (ClassCastException classCastException) {
             // it might be that the content of securedProperties does not cast to the expected LinkedHashMap<String, String>
             // if this is the case then throw an exception
-            // TODO
-            throw new RuntimeException();
+            ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.CONFIG_ERROR_CONNECTION_SECURED_PROPERTIES, methodName, null);
+
         }
         if (configuredConnectionSecureProperties != null) {
 
@@ -451,18 +449,17 @@ abstract public class OMRSEventProducer
                 null,
                 true);
 
-
         tableEntity.setCreateTime(connectorTable.getCreateTime());
 
 
         List<Classification> tableClassifications = tableEntity.getClassifications();
         if (tableClassifications == null) {
-            tableClassifications = new ArrayList<>(); 
+            tableClassifications = new ArrayList<>();
         }
 
         Classification classification = mapperHelper.createTypeEmbeddedClassificationForTable(methodName, tableEntity);
         tableClassifications.add(classification);
-        final String tableType = connectorTable.getType();
+        String tableType = connectorTable.getType();
 
         if (tableType != null && tableType.equals("VIRTUAL_VIEW")) {
             //Indicate that this hmsTable is a view using the classification

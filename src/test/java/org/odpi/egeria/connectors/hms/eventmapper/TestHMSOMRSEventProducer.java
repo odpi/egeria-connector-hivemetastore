@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedException;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,7 +37,7 @@ public class TestHMSOMRSEventProducer
     public static final int TEST_CONFIG_REFRESH_INTERVAL = 5;
 
     @Test
-    protected void testEmptyConfig() throws IOException {
+    protected void testEmptyConfig() throws IOException, ConnectorCheckedException {
         assertTrue(true);
         HMSOMRSEventProducer hmsomrsEventProducer = new HMSOMRSEventProducer();
         hmsomrsEventProducer.extractConfigurationProperties(null);
@@ -47,7 +48,7 @@ public class TestHMSOMRSEventProducer
     }
 
     @Test
-    protected void testConfigProperties() throws IOException {
+    protected void testConfigProperties() throws IOException, ConnectorCheckedException {
         String textPath = "src/test/resources/securedProperties.json";
         Map<String,String> mapPropertyValues = getMapPropertyValue(textPath);
         Map<String, Object> configMap = new HashMap<>();
@@ -68,9 +69,8 @@ public class TestHMSOMRSEventProducer
 
         assertTrue(TEST_DB.equals( hmsomrsEventProducer.getDbName()));
         assertTrue(TEST_CAT.equals( hmsomrsEventProducer.getCatName()));
-
-
     }
+    @SuppressWarnings("unchecked")
     private static  Map<String,String> getMapPropertyValue(String textPath) throws IOException {
         Path path = Paths.get(textPath);
         String content = Files.readString(path);

@@ -55,7 +55,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                                 OMRSRepositoryEventProcessor repositoryEventProcessor,
                                 Map<String, Object> configurationProperties,
                                 EndpointProperties endpoint,
-                                String userId) {
+                                String userId) throws ConnectorCheckedException {
         super(auditLog, repositoryHelper, repositoryConnector, repositoryEventProcessor, configurationProperties, endpoint, userId);
 
     }
