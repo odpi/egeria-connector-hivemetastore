@@ -36,6 +36,7 @@ import java.util.*;
  * 1) for the asset Entities and relationships
  * 2) for each RelationalTable, it's RelationalColumns and associated relationships
  */
+@SuppressWarnings("Var")
 public class HMSOMRSEventProducer extends OMRSEventProducer
 {
 
