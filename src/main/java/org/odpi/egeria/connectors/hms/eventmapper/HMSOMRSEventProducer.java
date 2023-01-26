@@ -136,7 +136,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
     }
     protected ConnectorTable getTableFrom3rdParty(String catName, String dbName, String baseCanonicalName, String tableName) {
         String  methodName = "getTableFrom3rdParty";
-        ConnectorTable connectorTable = null;
+        @Var ConnectorTable connectorTable = null;
 
         @Var Table hmsTable = null;
         try {
@@ -185,7 +185,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
 
         while (colsIterator.hasNext()) {
-            ConnectorColumn column = new ConnectorColumn();
+            var column = new ConnectorColumn();
             FieldSchema fieldSchema = colsIterator.next();
             String columnName = fieldSchema.getName();
             column.setName(columnName);

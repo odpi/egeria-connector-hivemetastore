@@ -376,7 +376,7 @@ abstract public class OMRSEventProducer
      */
     private void getRequiredTypes() throws ConnectorCheckedException {
         String methodName = "getRequiredTypes";
-        final int supportedCount = SupportedTypes.supportedTypeNames.size();
+        int supportedCount = SupportedTypes.supportedTypeNames.size();
 
         int typesAvailableCount = 0;
         int retryCount = 0;
