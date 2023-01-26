@@ -8,6 +8,7 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.thirdparty.com.google.errorprone.annotations.Var;
 import org.apache.thrift.TException;
 import org.odpi.egeria.connectors.hms.ConnectorColumn;
 import org.odpi.egeria.connectors.hms.ConnectorTable;
@@ -137,7 +138,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         String  methodName = "getTableFrom3rdParty";
         ConnectorTable connectorTable = null;
 
-        Table hmsTable = null;
+        @Var Table hmsTable = null;
         try {
             hmsTable = client.getTable(catName, dbName, tableName);
         } catch (TException e) {
@@ -152,7 +153,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                 String columnName = fieldSchema.getName();
                 String dataType = fieldSchema.getType();
 
-                ConnectorColumn column = new ConnectorColumn();
+                var column = new ConnectorColumn();
                 column.setName(columnName);
                 column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
                 column.setType(dataType);

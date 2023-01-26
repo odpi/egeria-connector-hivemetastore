@@ -4,6 +4,7 @@ package org.odpi.egeria.connectors.hms.eventmapper;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.hadoop.thirdparty.com.google.errorprone.annotations.Var;
 import org.odpi.egeria.connectors.hms.ConnectorColumn;
 import org.odpi.egeria.connectors.hms.ConnectorTable;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
@@ -176,7 +177,7 @@ abstract public class OMRSEventProducer
         configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS);
         LinkedHashMap<String, String> configuredConnectionSecureProperties = null;
         try {
-           configuredConnectionSecureProperties = (LinkedHashMap<String, String>) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES);
+            configuredConnectionSecureProperties = (LinkedHashMap<String, String>) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES);
         } catch (ClassCastException classCastException) {
             // it might be that the content of securedProperties does not cast to the expected LinkedHashMap<String, String>
             // if this is the case then throw an exception
