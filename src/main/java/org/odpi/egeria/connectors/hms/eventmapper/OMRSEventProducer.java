@@ -462,8 +462,9 @@ abstract public class OMRSEventProducer
 
         Classification classification = mapperHelper.createTypeEmbeddedClassificationForTable(methodName, tableEntity);
         tableClassifications.add(classification);
+        final String tableType = connectorTable.getType();
 
-        if ("VIRTUAL_VIEW".equals(connectorTable.getType())) {
+        if (tableType != null && tableType.equals("VIRTUAL_VIEW")) {
             //Indicate that this hmsTable is a view using the classification
             tableClassifications.add(mapperHelper.createCalculatedValueClassification("refreshRepository", tableEntity, connectorTable.getHmsViewOriginalText()));
         }
