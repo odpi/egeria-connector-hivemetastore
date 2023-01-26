@@ -1,0 +1,42 @@
+{
+
+    "class": "MapPropertyValue",
+    "headerVersion": 0,
+    "instancePropertyCategory": "MAP",
+    "typeGUID": "8fa603dd-c2c5-43fc-8ff4-92141f2414ad",
+    "typeName": "map<string,object>",
+    "mapValues": {
+      "class": "InstanceProperties",
+      "headerVersion": 0,
+      "instanceProperties": {
+        "aaa": {
+          "class": "PrimitivePropertyValue",
+          "headerVersion": 0,
+          "instancePropertyCategory": "PRIMITIVE",
+          "primitiveDefCategory": "OM_PRIMITIVE_TYPE_STRING",
+          "primitiveValue": "aaa-value"
+        },
+        "bbb": {
+          "class": "PrimitivePropertyValue",
+          "headerVersion": 0,
+          "instancePropertyCategory": "PRIMITIVE",
+          "primitiveDefCategory": "OM_PRIMITIVE_TYPE_STRING",
+          "primitiveValue": "bbb-value"
+        },
+        "ccc": {
+          "class": "PrimitivePropertyValue",
+          "headerVersion": 0,
+          "instancePropertyCategory": "PRIMITIVE",
+          "primitiveDefCategory": "OM_PRIMITIVE_TYPE_STRING",
+          "primitiveValue": "ccc-value"
+        }
+      },
+      "propertyNames": [
+        "aaa",
+        "bbb",
+        "ccc"
+      ],
+      "propertyCount": 5
+    },
+    "mapElementCount": 5
+  }

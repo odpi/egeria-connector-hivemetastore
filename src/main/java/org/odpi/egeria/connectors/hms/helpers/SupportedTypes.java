@@ -11,6 +11,8 @@ public class SupportedTypes {
     // this should be a natural to the technology separator character to be used to separate elements in a name.
     public static final String SEPARATOR_CHAR = ".";
 
+    public static final String SCHEMA_TOKEN_NAME = "schema-type";
+
 
     public static final String CONNECTION = "Connection";
     public static final String CONNECTOR_TYPE = "ConnectorType";

@@ -106,7 +106,7 @@ dependencies {
     compileOnly "org.odpi.egeria:repository-services-implementation:${egeriaversion}"
     compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
     compileOnly "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
-    compileOnly "org.odpi.egeria:repository-services-apis:${egeriaversion}"
+    testImplementation "org.odpi.egeria:repository-services-apis:${egeriaversion}"
     compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
     compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
     compileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
@@ -123,23 +123,23 @@ dependencies {
     testCompileOnly "org.junit.jupiter:junit-jupiter-api:${jupiterVersion}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}"
 
-// temporary for testing
-//    compileOnly files('libs/omrs-caching-repository-connector-3.13-SNAPSHOT.jar')
-
-
 }
 
-// Standard tests
+// Testing
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        includeEngines 'junit-jupiter'
+    }
+    dependencies {
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}"
+    }
+
     testLogging {
         events "passed", "skipped", "failed"
     }
+
     reports {
         html.required = true
-    }
-    filter {
-        includeTestsMatching "*Test"
     }
 }
 
@@ -228,6 +228,11 @@ publishing {
                         id = 'planetf1'
                         name = 'Nigel Jones'
                         email = 'nigel.l.jones+git@gmail.com'
+                    }
+                    developer {
+                        id = 'davidradl'
+                        name = 'David Radley'
+                        email = 'david_radley@uk.ibm.com'
                     }
                 }
                 scm {
