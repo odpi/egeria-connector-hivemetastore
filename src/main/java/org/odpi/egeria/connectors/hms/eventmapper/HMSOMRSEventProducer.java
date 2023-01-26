@@ -121,6 +121,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
     }
 
     @Override
+    @SuppressWarnings("Varifier")
     protected List<String> getTableNamesFrom3rdParty(String catName, String dbName, String baseCanonicalName) {
         String methodName = "refreshRepository";
         List<String> tableNames = new ArrayList<>();
@@ -161,9 +162,9 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         return connectorTable;
     }
 
-
+    @SuppressWarnings("JavaUtilDate")
     private ConnectorTable getTableFromHMSTable(String baseCanonicalName, Table hmsTable) {
-        ConnectorTable connectorTable = new ConnectorTable();
+        var connectorTable = new ConnectorTable();
         String name = hmsTable.getTableName();
         String tableType = hmsTable.getTableType();
         String tableCanonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.SCHEMA_TOKEN_NAME + SupportedTypes.SEPARATOR_CHAR + name;
