@@ -43,8 +43,9 @@ public class TestHMSOMRSEventProducer
         hmsomrsEventProducer.extractConfigurationProperties(null);
         assertNull(hmsomrsEventProducer.getConnectionSecuredProperties());
         assertNull(hmsomrsEventProducer.getEndpoint());
-        assertEquals("hive", hmsomrsEventProducer.getCatName());
-        assertEquals(hmsomrsEventProducer.getDbName(), "default");
+
+        assertNull(hmsomrsEventProducer.getCatName());
+        assertNull(hmsomrsEventProducer.getDbName());
     }
 
     @Test

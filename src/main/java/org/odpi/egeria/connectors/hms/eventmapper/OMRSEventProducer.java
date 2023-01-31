@@ -64,8 +64,8 @@ abstract public class OMRSEventProducer
     protected OMRSMetadataCollection metadataCollection = null;
 
     private String repositoryName = null;
-    private String catName = "hive";
-    private String dbName = "default";
+    private String catName = null;
+    private String dbName = null;
     private boolean sendPollEvents = false;
     private boolean cacheIntoCachingRepository = true;
     private String configuredEndpointAddress = null;
@@ -144,6 +144,7 @@ abstract public class OMRSEventProducer
      * Extract Egeria configuration properties into instance variables
      *
      * @param configurationProperties map of Egeria configuration variables.
+     * @throws ConnectorCheckedException connector checked Exception
      */
     @SuppressWarnings("unchecked")
     protected void extractConfigurationProperties(Map<String, Object> configurationProperties) throws ConnectorCheckedException {
@@ -214,6 +215,18 @@ abstract public class OMRSEventProducer
      */
     protected abstract List<String> getTableNamesFrom3rdParty(String catName, String dbName, String baseCanonicalName);
 
+//    /**
+//     * Get Catalog names
+//     * @return list of catalog names
+//     */
+//    protected abstract List<String> getCatalogNamesFrom3rdParty();
+//
+//    /**
+//     * get database names under the catalog
+//     * @param catalogName name of the catalog to get the database names from
+//     * @return List of database names
+//     */
+//    protected abstract List<String> getDBNamesUnderCatalog(String catalogName);
     /**
      * Get a ConnectorTable (a technology independant representation of a table) from the 3rd party technology
      * @param catName catalog name
@@ -249,41 +262,17 @@ abstract public class OMRSEventProducer
             qualifiedTableNameToEntityMap = new HashMap<>();
             qualifiedTableNameToRelationshipMap = new HashMap<>();
 
-            // populate the above lists with the database and schema entities and relationships
-
-            baseCanonicalName = catName + SupportedTypes.SEPARATOR_CHAR + dbName;
-            // collect the entities and relationships above the table(s)
-            collectEntitiesAndRelationshipsAboveTable();
-
-            if (cacheIntoCachingRepository) {
-                refreshRepository(aboveTableEntityList, aboveTableRelationshipList );
-            }
-            // send batch event
-            if (sendPollEvents) {
-                issueBatchEvent(aboveTableEntityList, aboveTableRelationshipList);
+            if (dbName !=null) {
+                // catName will either be specified or null.
+                processDataBase(methodName, dbName);
+            } else {
+                // null catName means to use the default
+//                List<String> dbNames = getDBNamesUnderCatalog(catName);
+//                for (String currentDBName : dbNames) {
+//                    processDataBase(methodName, currentDBName);
+//                }
             }
 
-
-            List<String> tableNames = getTableNamesFrom3rdParty(catName, dbName, baseCanonicalName);
-            if (tableNames != null && !tableNames.isEmpty()) {
-                // create each table and relationship
-                for (String tableName : tableNames) {
-                    ConnectorTable connectorTable = getTableFrom3rdParty(catName, dbName, baseCanonicalName, tableName);
-                    qualifiedTableNameToEntityMap = new HashMap<>();
-                    qualifiedTableNameToRelationshipMap = new HashMap<>();
-                    convertToConnectorTableToEntitiesAndRelationships(methodName, connectorTable);
-                    String tableQualifiedName = connectorTable.getQualifiedName();
-                    List<EntityDetail> entityList = qualifiedTableNameToEntityMap.get(tableQualifiedName);
-                    List<Relationship> relationshipList = qualifiedTableNameToRelationshipMap.get(tableQualifiedName);
-
-                    if (cacheIntoCachingRepository) {
-                        refreshRepository(entityList, relationshipList);
-                    }
-                    if (sendPollEvents) {
-                        issueBatchEvent(entityList, relationshipList );
-                    }
-                }
-            }
             status = true;
         } catch (ConnectorCheckedException e) {
             String msg = "No Exception message";
@@ -309,12 +298,53 @@ abstract public class OMRSEventProducer
         }
         return status;
     }
+
+    private void processDataBase(String methodName, String currentDBName) throws ConnectorCheckedException, TypeErrorException {
+        // populate the above lists with the database and schema entities and relationships
+        if (catName == null) {
+            baseCanonicalName = currentDBName;
+        } else {
+            baseCanonicalName = catName + SupportedTypes.SEPARATOR_CHAR + currentDBName;
+        }
+        // collect the entities and relationships above the table(s)
+        collectEntitiesAndRelationshipsAboveTable(currentDBName);
+
+        if (cacheIntoCachingRepository) {
+            refreshRepository(aboveTableEntityList, aboveTableRelationshipList );
+        }
+        // send batch event
+        if (sendPollEvents) {
+            issueBatchEvent(aboveTableEntityList, aboveTableRelationshipList);
+        }
+
+        List<String> tableNames = getTableNamesFrom3rdParty(catName, currentDBName, baseCanonicalName);
+        if (tableNames != null && !tableNames.isEmpty()) {
+            // create each table and relationship
+            for (String tableName : tableNames) {
+                ConnectorTable connectorTable = getTableFrom3rdParty(catName, currentDBName, baseCanonicalName, tableName);
+                qualifiedTableNameToEntityMap = new HashMap<>();
+                qualifiedTableNameToRelationshipMap = new HashMap<>();
+                convertToConnectorTableToEntitiesAndRelationships(methodName, connectorTable);
+                String tableQualifiedName = connectorTable.getQualifiedName();
+                List<EntityDetail> entityList = qualifiedTableNameToEntityMap.get(tableQualifiedName);
+                List<Relationship> relationshipList = qualifiedTableNameToRelationshipMap.get(tableQualifiedName);
+
+                if (cacheIntoCachingRepository) {
+                    refreshRepository(entityList, relationshipList);
+                }
+                if (sendPollEvents) {
+                    issueBatchEvent(entityList, relationshipList );
+                }
+            }
+        }
+    }
+
     /**
      * Collect the Entities and relationships above the tables(s)
      *
      * @throws ConnectorCheckedException connector exception
      */
-    private void collectEntitiesAndRelationshipsAboveTable() throws ConnectorCheckedException {
+    private void collectEntitiesAndRelationshipsAboveTable(String currentDBName) throws ConnectorCheckedException {
         String methodName = "collectEntitiesAndRelationshipsAboveTable";
 
         // Create database
@@ -335,7 +365,7 @@ abstract public class OMRSEventProducer
         // create RelationalDBType
         EntityDetail relationalDBTypeEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                 SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,
-                dbName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.SCHEMA_TOKEN_NAME,
+                currentDBName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.SCHEMA_TOKEN_NAME,
                 baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "schemaType",
                 null,
                 false);
