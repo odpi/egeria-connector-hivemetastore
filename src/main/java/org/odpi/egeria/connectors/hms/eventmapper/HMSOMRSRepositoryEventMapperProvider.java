@@ -18,7 +18,7 @@ import java.util.List;
  * name of the OMRS Connector implementation (by calling super.setConnectorClassName(className)).
  * Then the connector provider will work.
  */
-@SuppressWarnings("Varifier")
+@SuppressWarnings("Var")
 public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnectorProviderBase {
 
     static final String CONNECTOR_TYPE_GUID = "fd923c81-4bfb-445f-a866-2ae85b2bdefa";

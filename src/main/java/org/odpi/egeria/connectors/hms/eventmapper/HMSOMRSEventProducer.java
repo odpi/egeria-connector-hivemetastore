@@ -123,7 +123,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 //            metadataCollectionName = localServerName;
         }
     }
-    @SuppressWarnings("Varifier")
+    @SuppressWarnings("Var")
     @Override
     protected List<String> getTableNamesFrom3rdParty(String catName, String dbName, String baseCanonicalName) {
         String methodName = "refreshRepository";
