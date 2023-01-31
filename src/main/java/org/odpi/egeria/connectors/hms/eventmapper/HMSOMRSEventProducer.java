@@ -135,11 +135,12 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         }
         return tableNames;
     }
+    @SuppressWarnings("Varifier")
     protected ConnectorTable getTableFrom3rdParty(String catName, String dbName, String baseCanonicalName, String tableName) {
         String  methodName = "getTableFrom3rdParty";
-        @Var ConnectorTable connectorTable = null;
+        ConnectorTable connectorTable = null;
 
-        @Var Table hmsTable = null;
+        Table hmsTable = null;
         try {
             hmsTable = client.getTable(catName, dbName, tableName);
         } catch (TException e) {
