@@ -128,26 +128,16 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
     EVENT_MAPPER_CANNOT_GET_TYPES(400, "OMRS-HMS-REPOSITORY-400-096 ",
                                   "The event mapper failed to obtain the types, so cannot proceed ",
                                   "The system will shutdown the server",
-                                  "ensure you are using a repository that supports the required types."),
+                                  "Ensure you are using a repository that supports the required types."),
 
-    ENTITY_NOT_KNOWN(404, "OMRS-HMS-REPOSITORY-404-002 ",
-            "On Server {0} for request {1}, the entity identified with guid {0} is not known to the open metadata repository {2}",
-            "The system is unable to retrieve the properties for the requested entity because the supplied guid is not recognized.",
-            "The guid is supplied by the caller to the server.  It may have a logic problem that has corrupted the guid, or the entity has been deleted since the guid was retrieved."),
-
-    RELATIONSHIP_NOT_KNOWN(404, "OMRS-HMS-REPOSITORY-404-003 ",
-            "On Server {0} for request {1}, the relationship identified with guid {2} is not known to the open metadata repository {2}",
-            "The system is unable to retrieve the properties for the requested relationship because the supplied guid is not recognized.",
-            "The guid is supplied by the caller to the OMRS.  It may have a logic problem that has corrupted the guid, or the relationship has been deleted since the guid was retrieved."),
+    CONFIG_ERROR_CONNECTION_SECURED_PROPERTIES(400, "OMRS-HMS-REPOSITORY-400-097 ",
+            "The connector configuration connectionSecuredProperties in not correct as is does not cast to a String of Strings.",
+            "The system will shutdown the server",
+            "Remove or correct the connectionSecuredProperties. It needs to be a map of Strings."),
     TYPEDEF_NAME_NOT_KNOWN(404, "OMRS-HMS-REPOSITORY-404-004",
                            "On Server {0} for request {1}, the TypeDef unique name {2} passed is not known to this repository connector",
                            "The system is unable to retrieve the properties for the requested TypeDef because the supplied identifiers are not recognized.",
-                           "The identifier is supplied by the caller.  It may have a logic problem that has corrupted the identifier, or the TypeDef has been deleted since the identifier was retrieved."),
-    ENTITY_PROXY_ONLY(404, "OMRS-HMS-REPOSITORY-404-005",
-                      "On server {0} for request {1}, a specific entity instance for guid {2}, but this but only a proxy version of the entity is in the metadata collection",
-                      "The system is unable to return the entity as it is only a proxy.",
-                      "The guid identifier is supplied by the caller. Amend the caller to supply a guid assoicated with an Entity rather than a proxy."),
-
+                           "The identifier is supplied by the caller.  It may have a logic problem that has corrupted the identifier, or the TypeDef has been deleted since the identifier was retrieved.")
 
     ;
 

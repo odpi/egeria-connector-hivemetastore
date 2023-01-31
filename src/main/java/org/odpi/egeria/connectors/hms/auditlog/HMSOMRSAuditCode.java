@@ -94,7 +94,18 @@ public enum HMSOMRSAuditCode implements AuditLogMessageSet {
                          "The Hive metastore connector getTable for table {0} failed with error {1}",
                          "Connector is will continue to poll, but this table will not be picked up.",
                          "Review the error and assess why this table is not being. Raise a Git issue if it is not obvious what the cause is"),
-
+    // TODO should this be a fail? i.e. stop the connector
+    HIVE_GETCATALOGS_FAILED("OMRS-HMS-REPOSITORY-015",
+            OMRSAuditLogRecordSeverity.INFO,
+            "The Hive metastore connector getCatalogs call failed with error {0}",
+            "Connector is will continue to poll and will pick up tables if they are added.",
+            "Ensure that the Hive connection details correctly point to an active Hive server with tables defined"),
+    // TODO should this be a fail? i.e. stop the connector
+    HIVE_GETDATABASES_FAILED("OMRS-HMS-REPOSITORY-016",
+            OMRSAuditLogRecordSeverity.INFO,
+            "The Hive metastore connector getAllDatabases call failed with error {0}",
+            "Connector is will continue to poll and will pick up tables if they are added.",
+            "Ensure that the Hive connection details correctly point to an active Hive server with tables defined"),
 
     ;
 

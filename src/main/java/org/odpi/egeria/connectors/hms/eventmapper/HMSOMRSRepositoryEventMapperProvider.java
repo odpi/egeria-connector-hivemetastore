@@ -18,6 +18,7 @@ import java.util.List;
  * name of the OMRS Connector implementation (by calling super.setConnectorClassName(className)).
  * Then the connector provider will work.
  */
+@SuppressWarnings({"Var","Varifier"})
 public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnectorProviderBase {
 
     static final String CONNECTOR_TYPE_GUID = "fd923c81-4bfb-445f-a866-2ae85b2bdefa";
@@ -38,6 +39,8 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
 
     static final String CACHE_INTO_CACHING_REPOSITORY = "cacheIntoCachingRepository";
 
+    static final String CONNECTION_SECURED_PROPERTIES = "connectionSecuredProperties";
+
     /**
      * If this is set then we use this as the endpoint address (e.g. the JDBC URL)
      * If it is not set then, no connection is associated with the asset
@@ -49,7 +52,7 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
      * OMRS Connector implementation.
      */
     public HMSOMRSRepositoryEventMapperProvider() {
-        Class<?> connectorClass = HMSOMRSRepositoryEventMapper.class;
+        Class<?> connectorClass = OMRSDatabasePollingRepositoryEventMapper.class;
         super.setConnectorClassName(connectorClass.getName());
         ConnectorType connectorType = new ConnectorType();
         connectorType.setType(ConnectorType.getConnectorTypeType());
@@ -70,6 +73,7 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
         knownConfigProperties.add(METADATA_STORE_USER);
         knownConfigProperties.add(METADATA_STORE_PASSWORD);
         knownConfigProperties.add(USE_SSL);
+        knownConfigProperties.add(CONNECTION_SECURED_PROPERTIES);
 
         connectorType.setRecognizedConfigurationProperties(knownConfigProperties);
 
