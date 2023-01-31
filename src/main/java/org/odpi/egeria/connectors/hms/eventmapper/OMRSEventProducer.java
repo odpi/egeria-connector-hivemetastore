@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 1) for the asset Entities and relationships
  * 2) for each RelationalTable, it's RelationalColumns and associated relationships
  */
+@SuppressWarnings("Varifier")
 abstract public class OMRSEventProducer
 {
 
