@@ -36,7 +36,8 @@ import java.util.*;
  * 1) for the asset Entities and relationships
  * 2) for each RelationalTable, it's RelationalColumns and associated relationships
  */
-@SuppressWarnings("Var")
+
+@SuppressWarnings("Varifier")
 public class HMSOMRSEventProducer extends OMRSEventProducer
 {
 
@@ -123,7 +124,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
     }
 
     @Override
-    @SuppressWarnings("Varifier")
+
     protected List<String> getTableNamesFrom3rdParty(String catName, String dbName, String baseCanonicalName) {
         String methodName = "refreshRepository";
         List<String> tableNames = new ArrayList<>();
@@ -135,7 +136,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         }
         return tableNames;
     }
-    @SuppressWarnings("Varifier")
+
     protected ConnectorTable getTableFrom3rdParty(String catName, String dbName, String baseCanonicalName, String tableName) {
         String  methodName = "getTableFrom3rdParty";
         ConnectorTable connectorTable = null;
