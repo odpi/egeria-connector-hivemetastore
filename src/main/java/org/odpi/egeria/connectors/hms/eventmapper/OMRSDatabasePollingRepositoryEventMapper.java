@@ -66,7 +66,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("Var")
+    @SuppressWarnings({"Var","Varifier"})
     @Override
     synchronized public void start() throws ConnectorCheckedException {
 

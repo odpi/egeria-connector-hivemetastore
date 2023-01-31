@@ -37,7 +37,7 @@ import java.util.*;
  * 2) for each RelationalTable, it's RelationalColumns and associated relationships
  */
 
-@SuppressWarnings("Varifier")
+@SuppressWarnings({"Var","Varifier"})
 public class HMSOMRSEventProducer extends OMRSEventProducer
 {
 
@@ -69,7 +69,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
      * @throws ConnectorCheckedException could not connect to HMS
      * @throws RepositoryErrorException repository error - endpoint not supplied.
      */
-    @SuppressWarnings("Varifier")
     @Override
     protected void connectTo3rdParty() throws RepositoryErrorException, ConnectorCheckedException {
         String methodName = "connectTo3rdParty";
@@ -123,7 +122,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 //            metadataCollectionName = localServerName;
         }
     }
-    @SuppressWarnings("Var")
+
     @Override
     protected List<String> getTableNamesFrom3rdParty(String catName, String dbName, String baseCanonicalName) {
         String methodName = "refreshRepository";
@@ -136,7 +135,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         }
         return tableNames;
     }
-    @SuppressWarnings("Varifier")
     protected ConnectorTable getTableFrom3rdParty(String catName, String dbName, String baseCanonicalName, String tableName) {
         String  methodName = "getTableFrom3rdParty";
         ConnectorTable connectorTable = null;
