@@ -17,6 +17,7 @@ import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
 import org.odpi.egeria.connectors.hms.helpers.ExceptionHelper;
 import org.odpi.egeria.connectors.hms.helpers.SupportedTypes;
 import org.odpi.openmetadata.frameworks.auditlog.AuditLog;
+import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectionCheckedException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedException;
 import org.odpi.openmetadata.frameworks.connectors.properties.EndpointProperties;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryconnector.OMRSRepositoryConnector;
@@ -77,6 +78,22 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         if (configuredUseSSL != null) {
             useSSL = configuredUseSSL;
         }
+        String configuredCatName = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME);
+        String catName =null;
+        String dbName = null;
+        if (configuredCatName != null) {
+            catName = configuredCatName;
+        }
+        String configuredDBName = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME);
+        if (configuredDBName != null) {
+            dbName = configuredDBName;
+        }
+        if (useSSL && catName == null && dbName != null) {
+            // useSSL = true is only used with IBM Data Engine
+            // At this time it is not possible to get databases without a named catalog.
+            ExceptionHelper.raiseConnectorCheckedException(className, HMSOMRSErrorCode.NEED_NAMED_CATALOG_IN_CONFIG, methodName, null, "null");
+        }
+
         String metadata_store_userId =null;
         String configuredMetadataStoreUserId = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER);
         if (configuredMetadataStoreUserId != null) {
@@ -87,6 +104,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         if (configuredMetadataStorePassword != null) {
             metadata_store_password = configuredMetadataStorePassword;
         }
+
         if (endpoint == null) {
             ExceptionHelper.raiseRepositoryErrorException(className, HMSOMRSErrorCode.ENDPOINT_NOT_SUPPLIED_IN_CONFIG, methodName, null, "null");
         } else {
@@ -119,7 +137,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
             }
             metadataCollection = this.repositoryConnector.getMetadataCollection();
             metadataCollectionId = metadataCollection.getMetadataCollectionId(getUserId());
-//            metadataCollectionName = localServerName;
         }
     }
 
@@ -134,6 +151,41 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
             auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLES_FAILED.getMessageDefinition(e.getMessage()));
         }
         return tableNames;
+    }
+    @Override
+    protected List<String> getAllCatalogNamesFrom3rdParty() throws ConnectorCheckedException {
+        String methodName = "getAllCatalogNamesFrom3rdParty";
+        List<String> catNames = new ArrayList<>();
+
+        try {
+            catNames = client.getCatalogs();
+        } catch (TException e) {
+            auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETCATALOGS_FAILED.getMessageDefinition(e.getMessage()));
+            // stop the connector if we have no catalogs, as there is nothing to sync.
+            ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.NO_CATALOGS_EXCEPTION, methodName, e);
+        }
+
+        return catNames;
+    }
+    @Override
+    protected List<String> getDBNamesUnderCatalog(String catalogName) {
+        String methodName = "getDBNamesUnderCatalog";
+        List<String>dbNames = new ArrayList<>();
+
+        try {
+            if (catalogName == null) {
+                // some HMS implementations do not support passing null as the catalog name parameter
+                dbNames = client.getAllDatabases();
+            } else {
+                dbNames = client.getAllDatabases(catalogName);
+            }
+        } catch (TException e) {
+            if (catalogName == null) {
+                catalogName = "default";
+            }
+            auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETDATABASES_FAILED.getMessageDefinition(e.getMessage(), catalogName));
+        }
+        return dbNames;
     }
     protected ConnectorTable getTableFrom3rdParty(String catName, String dbName, String baseCanonicalName, String tableName) {
         String  methodName = "getTableFrom3rdParty";
