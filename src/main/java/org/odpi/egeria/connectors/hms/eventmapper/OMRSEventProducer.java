@@ -2,9 +2,6 @@
 /* Copyright Contributors to the ODPi Egeria project. */
 package org.odpi.egeria.connectors.hms.eventmapper;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.hadoop.thirdparty.com.google.errorprone.annotations.Var;
 import org.odpi.egeria.connectors.hms.ConnectorColumn;
 import org.odpi.egeria.connectors.hms.ConnectorTable;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
@@ -22,11 +19,9 @@ import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollec
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryconnector.OMRSRepositoryConnector;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryconnector.OMRSRepositoryHelper;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryeventmapper.OMRSRepositoryEventProcessor;
-import org.odpi.openmetadata.repositoryservices.ffdc.exception.InvalidParameterException;
 import org.odpi.openmetadata.repositoryservices.ffdc.exception.RepositoryErrorException;
 import org.odpi.openmetadata.repositoryservices.ffdc.exception.TypeErrorException;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -216,18 +211,18 @@ abstract public class OMRSEventProducer
      */
     protected abstract List<String> getTableNamesFrom3rdParty(String catName, String dbName, String baseCanonicalName);
 
-//    /**
-//     * Get Catalog names
-//     * @return list of catalog names
-//     */
-//    protected abstract List<String> getCatalogNamesFrom3rdParty();
+    /**
+     * Get the list of all catalog names from the 3rd party.
+     * @return a list of catalog names
+     */
+    abstract protected List<String> getAllCatalogNamesFrom3rdParty() throws ConnectorCheckedException;
 //
-//    /**
-//     * get database names under the catalog
-//     * @param catalogName name of the catalog to get the database names from
-//     * @return List of database names
-//     */
-//    protected abstract List<String> getDBNamesUnderCatalog(String catalogName);
+    /**
+     * get database names under the catalog
+     * @param catalogName name of the catalog to get the database names from
+     * @return List of database names
+     */
+    protected abstract List<String> getDBNamesUnderCatalog(String catalogName);
     /**
      * Get a ConnectorTable (a technology independant representation of a table) from the 3rd party technology
      * @param catName catalog name
@@ -257,21 +252,23 @@ abstract public class OMRSEventProducer
             // connect to the 3rd party technology
             connectTo3rdParty();
             // reset the variables used to accumulate state
-            cachedRepositoryAccessor = new CachedRepositoryAccessor(userId, repositoryConnector.getServerName(), metadataCollection);
-            aboveTableEntityList = new ArrayList<>();
-            aboveTableRelationshipList = new ArrayList<>();
-            qualifiedTableNameToEntityMap = new HashMap<>();
-            qualifiedTableNameToRelationshipMap = new HashMap<>();
+
 
             if (dbName !=null) {
                 // catName will either be specified or null.
                 processDataBase(methodName, dbName);
             } else {
-                // null catName means to use the default
-//                List<String> dbNames = getDBNamesUnderCatalog(catName);
-//                for (String currentDBName : dbNames) {
-//                    processDataBase(methodName, currentDBName);
-//                }
+                // null catName means process all catalogs
+                if (catName == null ) {
+                    List<String> catNames = getAllCatalogNamesFrom3rdParty();
+                    if (catNames != null) {
+                        for (String currentCatName: catNames) {
+                            processCatalogDatabases(methodName, currentCatName);
+                        }
+                    }
+                } else {
+                    processCatalogDatabases(methodName, catName);
+                }
             }
 
             status = true;
@@ -299,8 +296,20 @@ abstract public class OMRSEventProducer
         }
         return status;
     }
+    private void processCatalogDatabases(String methodName, String catNameToProcess) throws ConnectorCheckedException, TypeErrorException {
+        List<String> dbNames = getDBNamesUnderCatalog(catNameToProcess);
+        for (String currentDBName : dbNames) {
+            processDataBase(methodName, currentDBName);
+        }
+    }
 
     private void processDataBase(String methodName, String currentDBName) throws ConnectorCheckedException, TypeErrorException {
+        // reset state for database
+        cachedRepositoryAccessor = new CachedRepositoryAccessor(userId, repositoryConnector.getServerName(), metadataCollection);
+        aboveTableEntityList = new ArrayList<>();
+        aboveTableRelationshipList = new ArrayList<>();
+        qualifiedTableNameToEntityMap = new HashMap<>();
+        qualifiedTableNameToRelationshipMap = new HashMap<>();
         // populate the above lists with the database and schema entities and relationships
         if (catName == null) {
             baseCanonicalName = currentDBName;
