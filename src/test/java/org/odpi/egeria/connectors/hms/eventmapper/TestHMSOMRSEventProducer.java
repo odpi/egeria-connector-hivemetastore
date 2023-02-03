@@ -13,7 +13,12 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.odpi.openmetadata.frameworks.connectors.Connector;
+import org.odpi.openmetadata.frameworks.connectors.ConnectorBroker;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedException;
+import org.odpi.openmetadata.frameworks.connectors.properties.ConnectionProperties;
+import org.odpi.openmetadata.frameworks.connectors.properties.beans.Connection;
+import org.odpi.openmetadata.frameworks.connectors.properties.beans.ConnectorType;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -78,6 +83,39 @@ public class TestHMSOMRSEventProducer
         ObjectMapper om = new ObjectMapper();
         return  om.readValue(content,  Map.class);
     }
+    @Test
+    protected void test1() {
+        ConnectorBroker cb = new ConnectorBroker();
+
+        ConnectorType testConnType = new ConnectorType();
+
+        testConnType.setQualifiedName("Test.ConnectorType");
+        testConnType.setDisplayName("TestCT");
+        testConnType.setConnectorProviderClassName(HMSOMRSRepositoryEventMapperProvider.class.getName());
+
+        Connection testConnection = new Connection();
+
+        testConnection.setQualifiedName("Test.Connection");
+        testConnection.setDisplayName("Test");
+        testConnection.setConnectorType(testConnType);
+
+        ConnectionProperties testConnectionProperties = new ConnectionProperties(testConnection);
+
+        try
+        {
+            Connector newConnector = cb.getConnector(testConnectionProperties);
+
+//            MockConnector mockConnector = (MockConnector)newConnector;
+//            assertTrue(mockConnector.getMockConnectorData().contains("This is from the mock connector"));
+//            assertTrue(mockConnector.getConnectedAssetProperties("TestUserId") == null);
+        }
+        catch (Exception error)
+        {
+            assertTrue(false);
+        }
+    }
+
+
 
 
 //
