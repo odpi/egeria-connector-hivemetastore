@@ -64,6 +64,9 @@ jobs:
           push: true
           tags: odpi/egeria:${{ env.VERSION }}, quay.io/odpi/egeria-connector-hivemetastore:${{ env.VERSION }}
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            EGERIA_BASE_IMAGE=${{ env.EGERIA_BASE_IMAGE }}
+            VERSION=${{ env.VERSION }}
       # Upload the library so that build results can be viewed
       - name: Upload Connector
         uses: actions/upload-artifact@v3
