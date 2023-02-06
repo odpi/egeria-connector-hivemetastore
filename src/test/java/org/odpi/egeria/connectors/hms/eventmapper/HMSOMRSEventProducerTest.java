@@ -19,7 +19,6 @@ import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedExceptio
 import org.odpi.openmetadata.frameworks.connectors.properties.ConnectionProperties;
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.Connection;
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.ConnectorType;
-import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 
-public class TestHMSOMRSEventProducer
+public class HMSOMRSEventProducerTest
 {
 
     public static final String TEST_DB = "testDB";
@@ -84,7 +83,7 @@ public class TestHMSOMRSEventProducer
         return  om.readValue(content,  Map.class);
     }
     @Test
-    protected void test1() {
+    protected void mytest() {
         ConnectorBroker cb = new ConnectorBroker();
 
         ConnectorType testConnType = new ConnectorType();
