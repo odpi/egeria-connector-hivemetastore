@@ -73,14 +73,6 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         this.client = client;
     }
 
-    public PollingThread getPollingThread() {
-        return pollingThread;
-    }
-
-    public void setPollingThread(PollingThread pollingThread) {
-        this.pollingThread = pollingThread;
-    }
-
     synchronized public String getUserId() {
         return userId;
     }
