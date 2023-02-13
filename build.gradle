@@ -7,7 +7,8 @@
 buildscript {
     repositories {
         mavenCentral()
-        mavenLocal() // note - this may pick up modified classes from ~/.m2
+        maven { url("https://oss.sonatype.org/content/repositories/snapshots") }
+//        mavenLocal() // note - this may pick up modified classes from ~/.m2
     }
 }
 
@@ -112,8 +113,10 @@ dependencies {
     testImplementation "org.odpi.egeria:repository-services-apis:${egeriaversion}"
     compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
     compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
-    // not yet released, for convenience we will include this for runtime
-    implementation "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+
+    compileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+    testImplementation "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+    // "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
 
     implementation 'org.apache.thrift:libthrift:0.13.0'
 

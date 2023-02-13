@@ -82,39 +82,6 @@ public class HMSOMRSEventProducerTest
         ObjectMapper om = new ObjectMapper();
         return  om.readValue(content,  Map.class);
     }
-    @Test
-    protected void mytest() {
-        ConnectorBroker cb = new ConnectorBroker();
-
-        ConnectorType testConnType = new ConnectorType();
-
-        testConnType.setQualifiedName("Test.ConnectorType");
-        testConnType.setDisplayName("TestCT");
-        testConnType.setConnectorProviderClassName(HMSOMRSRepositoryEventMapperProvider.class.getName());
-
-        Connection testConnection = new Connection();
-
-        testConnection.setQualifiedName("Test.Connection");
-        testConnection.setDisplayName("Test");
-        testConnection.setConnectorType(testConnType);
-
-        ConnectionProperties testConnectionProperties = new ConnectionProperties(testConnection);
-
-        try
-        {
-            Connector newConnector = cb.getConnector(testConnectionProperties);
-
-//            MockConnector mockConnector = (MockConnector)newConnector;
-//            assertTrue(mockConnector.getMockConnectorData().contains("This is from the mock connector"));
-//            assertTrue(mockConnector.getConnectedAssetProperties("TestUserId") == null);
-        }
-        catch (Exception error)
-        {
-            assertTrue(false);
-        }
-    }
-
-
 
 
 //
