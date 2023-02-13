@@ -3,8 +3,11 @@
 package org.odpi.egeria.connectors.hms.eventmapper;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
@@ -25,6 +28,9 @@ import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollec
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryeventmapper.OMRSRepositoryEventProcessor;
 import org.odpi.openmetadata.repositoryservices.ffdc.exception.RepositoryErrorException;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 
 
@@ -42,7 +48,7 @@ import java.util.*;
 public class HMSOMRSEventProducer extends OMRSEventProducer
 {
 
-    private HiveMetaStoreClient client = null;
+    private IMetaStoreClient client = null;
 
 
     private final String className = this.getClass().getName();
@@ -62,6 +68,14 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                                 String userId) throws ConnectorCheckedException {
         super(auditLog, repositoryHelper, repositoryConnector, repositoryEventProcessor, configurationProperties, endpoint, userId);
 
+    }
+
+    public IMetaStoreClient getClient() {
+        return client;
+    }
+
+    public void setClient(IMetaStoreClient client) {
+        this.client = client;
     }
 
     /**
@@ -130,7 +144,10 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
             conf.set("metastore.execute.setugi", "false");
 
             try {
-                client = new HiveMetaStoreClient(conf, null, false);
+                if (client == null) {
+                    // we are not testing
+                    client = new HiveMetaStoreClient(conf, null, false);
+                }
             } catch (MetaException e) {
                 //TODO
                 ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
@@ -198,6 +215,20 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
             auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLE_FAILED.getMessageDefinition(tableName, e.getMessage()));
         }
         if (hmsTable != null) {
+            ObjectMapper om = new ObjectMapper();
+            // uncomment the below code to produce files containing Tables to be used by junits from a running system.
+//            try {
+//                String tableJson = om.writeValueAsString(hmsTable);
+//                FileWriter fileWriter = new FileWriter("/Users/xxx/testtable-" + hmsTable.getTableName());
+//                PrintWriter printWriter = new PrintWriter(fileWriter);
+//                printWriter.print(tableJson);
+//
+//                printWriter.close();
+//            } catch (JsonProcessingException e) {
+//
+//            } catch (IOException e) {
+//
+//            }
             connectorTable = getTableFromHMSTable(baseCanonicalName, hmsTable);
             Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
 

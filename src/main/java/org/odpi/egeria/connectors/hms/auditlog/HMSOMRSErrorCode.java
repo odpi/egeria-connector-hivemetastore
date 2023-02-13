@@ -45,10 +45,12 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
             "The connector configuration connectionSecuredProperties in not correct as is does not cast to a String of Strings.",
             "The system will shutdown the server",
             "Remove or correct the connectionSecuredProperties. It needs to be a map of Strings."),
+
     NEED_NAMED_CATALOG_IN_CONFIG(400, "OMRS-HMS-REPOSITORY-400-009 ",
             "The connector configuration incorrectly contains useSSL=true and a specified database name, but no catalog name.",
             "The system will shutdown the server",
             "Amend the configuration to supply a valid catalogName to work with."),
+
     TYPEDEF_NAME_NOT_KNOWN(404, "OMRS-HMS-REPOSITORY-404-001",
                            "On Server {0} for request {1}, the TypeDef unique name {2} passed is not known to this repository connector",
                            "The system is unable to retrieve the properties for the requested TypeDef because the supplied identifiers are not recognized.",
