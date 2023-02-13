@@ -18,7 +18,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     // Checks for unnecessary & problematic dependencies
-    id 'com.autonomousapps.dependency-analysis' version "1.13.1"
+    id 'com.autonomousapps.dependency-analysis' version "1.19.0"
     // helps resolve log implementation clashes
     id 'dev.jacomet.logging-capabilities' version "0.10.0"
     // This plugin helps resolve jakarta/javax clashes
