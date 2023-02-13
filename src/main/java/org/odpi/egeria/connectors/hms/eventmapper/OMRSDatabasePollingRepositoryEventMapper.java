@@ -65,10 +65,6 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         super();
     }
 
-    public HMSOMRSEventProducer getOmrsEventProducer() {
-        return omrsEventProducer;
-    }
-
     public void setClient(IMetaStoreClient client) {
         this.client = client;
     }
