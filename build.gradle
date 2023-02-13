@@ -118,7 +118,7 @@ dependencies {
     testImplementation "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
     // "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
 
-    implementation 'org.apache.thrift:libthrift:0.13.0'
+    implementation 'org.apache.thrift:libthrift:0.17.0'
 
     // Standard version
     api 'org.apache.hive:hive-standalone-metastore:3.1.3'
@@ -176,7 +176,7 @@ javadoc {
 
 configurations.all {
     resolutionStrategy {
-        force('org.apache.thrift:libthrift:0.13.0')
+        force('org.apache.thrift:libthrift:0.17.0')
 //        force('org.apache.hadoop:hadoop-common:3.1.3')
     }
 }
