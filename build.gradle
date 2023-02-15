@@ -22,7 +22,6 @@ plugins {
     id 'dev.jacomet.logging-capabilities' version "0.10.0"
     // This plugin helps resolve jakarta/javax clashes
     id 'de.jjohannes.java-ecosystem-capabilities' version "0.5"
-    id "org.sonarqube" version "3.4.0.2513"
 }
 
 // Only do signing when running under github actinos
@@ -31,6 +30,7 @@ if (System.getenv("CI")) {
 }
 
 repositories {
+    mavenLocal() // note - this may pick up modified classes from ~/.m2
     mavenCentral()
     maven { url("https://oss.sonatype.org/content/repositories/snapshots") }
     // Needed for old jackson implementation fixed libraries (used in Egeria)
@@ -39,6 +39,21 @@ repositories {
     }
     // uncomment to pick up from local ~/.m2 - but can be unpredictable. recommend to use maven central and snapshots
 //    mavenLocal()
+
+    // Repository for custom IBM hive connector
+    if (project.hasProperty("ibmhive")) {
+
+        ivy {
+            url 'https://us.sql-query.cloud.ibm.com'
+            patternLayout {
+                artifact '/download/catalog/[artifact]-[revision]-sqlquery.[ext]'
+            }
+            // This is required in Gradle 6.0+ as metadata file (ivy.xml)
+            // is mandatory. Docs linked below this code section
+            metadataSources { artifact() }
+        }
+    }
+    // https://us.sql-query.cloud.ibm.com/download/catalog/hive-metastore-standalone-client-3.1.2-sqlquery.jar
 }
 
 // ensures we pick up the very latest snapshots when built
@@ -74,14 +89,12 @@ description = 'Egeria Connector for Hive Metastore'
 // Versions - most should be picked up from the import of the egeria base POM
 // TODO: Versions already in pom can be removed
 ext {
-    egeriaversion = '3.14'
-    cachingconnectorversion = '1.0-SNAPSHOT'
-    slf4jVersion = '1.7.36'
-    jacksonVersion = '2.13.2'
-    jupiterVersion = '5.8.2'
-    httpclientVersion = '4.5.13'
-    springwebVersion = '5.3.19'
-    hiveversion = '3.1.3'
+    egeriaversion = '3.15'
+    cachingconnectorversion = '1.1-SNAPSHOT'
+    hiveVersion = '3.1.3'
+    ibmHiveVersion = '3.1.2'
+    hadoopVersion = '3.3.3'
+    thriftVersion = '0.13.0'
 }
 
 
@@ -90,40 +103,44 @@ dependencies {
     // authoritative versions for dependencyManagement provided by egeria core - this uses the dependencyManagement
     // in the main Egeria pom to define the versions of the dependencies.
     implementation platform("org.odpi.egeria:egeria:${egeriaversion}")
-//    implementation "org.odpi.egeria:egeria:${egeriaversion}"
 
     // Only used for build - already present in server chassis at runtime - similar to 'provided' with maven
-    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
+    compileOnly "org.odpi.egeria:audit-log-framework"
 
-    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compileOnly "org.springframework:spring-core:${springwebVersion}"
-    compileOnly "org.odpi.egeria:open-connector-framework:${egeriaversion}"
-    compileOnly "org.odpi.egeria:open-metadata-types:${egeriaversion}"
-    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
-    compileOnly "org.odpi.egeria:repository-services:${egeriaversion}"
-    compileOnly "org.odpi.egeria:repository-services-implementation:${egeriaversion}"
-    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
-    compileOnly "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
-    testImplementation "org.odpi.egeria:repository-services-apis:${egeriaversion}"
-    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
-    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-databind"
+    compileOnly "com.fasterxml.jackson.core:jackson-annotations"
+    compileOnly "com.fasterxml.jackson.core:jackson-core"
+    compileOnly "org.springframework:spring-core"
+    compileOnly "org.odpi.egeria:open-connector-framework"
+    compileOnly "org.odpi.egeria:open-metadata-types"
+    compileOnly "org.odpi.egeria:audit-log-framework"
+    compileOnly "org.odpi.egeria:repository-services-implementation"
+    compileOnly "org.odpi.egeria:admin-services-api"
+    compileOnly "org.odpi.egeria:connector-configuration-factory"
+    compileOnlyApi "org.odpi.egeria:repository-services-apis"
+    compileOnly "org.odpi.egeria:admin-services-api"
+    compileOnly "org.odpi.egeria:audit-log-framework"
+    implementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
+
+
     // not yet released, for convenience we will include this for runtime
     implementation "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
 
-    implementation 'org.apache.thrift:libthrift:0.13.0'
+    implementation 'org.apache.thrift:libthrift:${thriftVersion}'
 
-    // Standard version
-    api 'org.apache.hive:hive-standalone-metastore:3.1.3'
+    // Use standard version by default, replace by alternate library for IBM config
+    if (project.hasProperty("ibmhive")) {
+        implementation "com.ibm.hive:hive-metastore-standalone-client:${ibmHiveVersion}"
+    } else {
+        implementation "org.apache.hive:hive-standalone-metastore:${hiveVersion}"
+    }
     // Hadoop common
-    implementation "org.apache.hadoop:hadoop-common:3.3.3"
+    implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
 
     // Only needed to compile test code
-    testCompileOnly "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
-    testCompileOnly "org.junit.jupiter:junit-jupiter-api:${jupiterVersion}"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}"
-
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
 }
 
 // Testing
@@ -132,7 +149,7 @@ test {
         includeEngines 'junit-jupiter'
     }
     dependencies {
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
     }
 
     testLogging {
@@ -185,20 +202,31 @@ shadowJar {
     // required as this hits a jar limit otherwise
     zip64 true
     // TODO: May not need to exclude, since we shade the dependencies
-    minimize {
-        exclude("com/google/protobuf/**")
-    }
+    exclude("com/google/protobuf/**")
+    // strip what we don't need, but keep egeria classes (ie connector dependency - providers)
+    // If enabled will cause connector to file when loading hadoop-commons. Disabling, as what else is dynamically loaded?
+    //minimize {
+    //    exclude(dependency('org.odpi.egeria:.*:.*'))
+    //}
+    // Hive libraries contain a large dependency chain. We want to shade most, but not all
+    // no wildcards, so have to list each one (or recode as expression). Also much quicker explicitly
+    // hadoop, kerby, yetus, jute, zookeeper, commons, curator, avro, calcite, thrift
+    relocate("org.apache", "org.odpi.openmetadata.shaded.apache")
+    // guava, common, re2j, gson
+    relocate("com.google", "org.odpi.openmetadata.shaded.google")
+    relocate("org.codehaus.stax2", "org.odpi.openmetadata.shaded.stax2")
+    relocate("org.xbill", "org.odpi.openmetadata.shaded.xbill")
+    relocate("com.ctc.wstx", "org.odpi.openmetadata.shaded.wstx")
+    relocate("com.sun", "org.odpi.openmetadata.shaded.sun")
+    // servlet, jdo, realtime, annotation
+    relocate("javax", "org.odpi.openmetadata.shaded.javax")
+    relocate("org.xerial.snappy", "org.odpi.openmetadata.shaded.snappy")
+    relocate("com.fasterxml", "org.odpi.openmetadata.shaded.fasterxml")
+    relocate("org.codehaus", "org.odpi.openmetadata.shaded.codehaus")
+    relocate("javolution", "org.odpi.openmetadata.shaded.javolution")
+    relocate("com.facebook", "org.odpi.openmetadata.shaded.facebook")
+    relocate("org.joda", "org.odpi.openmetadata.shaded.joda")
 }
-
-//// Configure Auto Relocation
-//// TODO: Final output needs review - we may wish to exclude more & only relocate problematic clashes
-import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
-task relocateShadowJar(type: ConfigureShadowRelocation) {
-    target = tasks.shadowJar
-    prefix = "myapp" // Default value is "shadow"
-
-}
-tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
 // TODO Ensure we run checks (health) on final Jar, not initial
 build.dependsOn shadowJar
@@ -285,10 +313,3 @@ if (System.getenv("CI")) {
     }
 }
 
-sonarqube {
-    properties {
-        property "sonar.projectKey", "odpi_egeria-connector-hivemetastore"
-        property "sonar.organization", "odpi-github"
-        property "sonar.host.url", "https://sonarcloud.io"
-    }
-}
