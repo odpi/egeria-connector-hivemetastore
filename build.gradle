@@ -7,7 +7,6 @@
 buildscript {
     repositories {
         mavenCentral()
-        mavenLocal() // note - this may pick up modified classes from ~/.m2
     }
 }
 
@@ -30,7 +29,6 @@ if (System.getenv("CI")) {
 }
 
 repositories {
-    mavenLocal() // note - this may pick up modified classes from ~/.m2
     mavenCentral()
     maven { url("https://oss.sonatype.org/content/repositories/snapshots") }
     // Needed for old jackson implementation fixed libraries (used in Egeria)
@@ -56,7 +54,10 @@ repositories {
     // https://us.sql-query.cloud.ibm.com/download/catalog/hive-metastore-standalone-client-3.1.2-sqlquery.jar
 }
 
-// ensures we pick up the very latest snapshots when built
+// ensures we exclude slf4j only for compile only. So it can be picked up as a transitive dependancy in the junits
+configurations.compileOnly {
+    exclude  group: 'org.slf4j', module: 'slf4j-api'
+}
 configurations.all {
     // check for updates every build - critical when using Snapshots
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
@@ -64,7 +65,6 @@ configurations.all {
     // picked up from hive libraries, we need to allow Egeria to decide logging implementation
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     exclude group: 'org.slf4j', module: 'slf4j-reload4j'
-    exclude group: 'org.slf4j', module: 'slf4j-api'
     exclude group: 'ch.qos.reload4j', module: 'reload4j'
     exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
     // TODO: Excluding protobuf may not be needed as we are now shading
@@ -90,7 +90,7 @@ description = 'Egeria Connector for Hive Metastore'
 // TODO: Versions already in pom can be removed
 ext {
     egeriaversion = '3.15'
-    cachingconnectorversion = '1.1-SNAPSHOT'
+    cachingconnectorversion = '1.0-SNAPSHOT'
     hiveVersion = '3.1.3'
     ibmHiveVersion = '3.1.2'
     hadoopVersion = '3.3.3'
@@ -122,7 +122,20 @@ dependencies {
     compileOnly "org.odpi.egeria:audit-log-framework"
     implementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
 
-
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compileOnly "org.springframework:spring-core:${springwebVersion}"
+    compileOnly "org.odpi.egeria:open-connector-framework:${egeriaversion}"
+    compileOnly "org.odpi.egeria:open-metadata-types:${egeriaversion}"
+    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
+    compileOnly "org.odpi.egeria:repository-services:${egeriaversion}"
+    compileOnly "org.odpi.egeria:repository-services-implementation:${egeriaversion}"
+    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
+    compileOnly "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
+    testImplementation "org.odpi.egeria:repository-services-apis:${egeriaversion}"
+    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
+    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
     // not yet released, for convenience we will include this for runtime
     implementation "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
 
@@ -141,23 +154,23 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
     testImplementation 'com.fasterxml.jackson.core:jackson-databind'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation "org.odpi.egeria:repository-services-apis"
+    testImplementation "org.odpi.egeria:open-connector-framework"
+
+
 }
 
 // Testing
 test {
-    useJUnitPlatform {
-        includeEngines 'junit-jupiter'
-    }
-    dependencies {
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-    }
-
+    useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
     }
-
     reports {
         html.required = true
+    }
+    filter {
+        includeTestsMatching "*Test"
     }
 }
 
@@ -265,9 +278,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com/odpi/egeria-connector-repository-file-sample.git'
-                    developerConnection = 'scm:git:ssh://github.com/odpi/egeria-connector-repository-file-sample.git'
-                    url = 'http://github.com/odpi/egeria-connector-repository-file-sample/tree/main'
+                    connection = 'scm:git:git://github.com/odpi/egeria-connector-hivemetastore.git'
+                    developerConnection = 'scm:git:ssh://github.com/odpi/egeria-connector-hivemetastore.git'
+                    url = 'http://github.com/odpi/egeria-connector-hivemetastore/tree/main'
                 }
             }
             // Override the project name & description for the pom based on properties set in the child build.gradle (hard to default & required for maven central)

@@ -172,9 +172,9 @@ abstract public class OMRSEventProducer
             cacheIntoCachingRepository = configuredCache;
         }
         configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS);
-        LinkedHashMap<String, String> configuredConnectionSecureProperties = null;
+        Map<String, String> configuredConnectionSecureProperties = null;
         try {
-            configuredConnectionSecureProperties = (LinkedHashMap<String, String>) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES);
+            configuredConnectionSecureProperties = (Map<String, String>) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES);
         } catch (ClassCastException classCastException) {
             // it might be that the content of securedProperties does not cast to the expected LinkedHashMap<String, String>
             // if this is the case then throw an exception
@@ -213,6 +213,7 @@ abstract public class OMRSEventProducer
 
     /**
      * Get the list of all catalog names from the 3rd party.
+     * @throws ConnectorCheckedException connector checked exception
      * @return a list of catalog names
      */
     abstract protected List<String> getAllCatalogNamesFrom3rdParty() throws ConnectorCheckedException;

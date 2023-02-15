@@ -2,6 +2,7 @@
 /* Copyright Contributors to the ODPi Egeria project. */
 package org.odpi.egeria.connectors.hms.eventmapper;
 
+import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
 import org.odpi.egeria.connectors.hms.helpers.ExceptionHelper;
@@ -50,13 +51,22 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
     protected OMRSMetadataCollection metadataCollection = null;
     private PollingThread pollingThread;
 
-    private HMSOMRSEventProducer omrsEventProducer;
+    private HMSOMRSEventProducer omrsEventProducer = null;
+
+    private IMetaStoreClient client = null;
+    private boolean testing = false;
+
+
 
     /**
      * Default constructor
      */
     public OMRSDatabasePollingRepositoryEventMapper() {
         super();
+    }
+
+    public void setClient(IMetaStoreClient client) {
+        this.client = client;
     }
 
     synchronized public String getUserId() {
@@ -77,8 +87,9 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         // this synchronisation should ensure that all the config is updated together before the polling thread accesses them
         synchronized (this) {
             //repositoryName = this.repositoryConnector.getRepositoryName();
-            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_STARTING.getMessageDefinition());
-
+            if (auditLog !=null) {
+                auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_STARTING.getMessageDefinition());
+            }
             if (!(repositoryConnector instanceof CachingOMRSRepositoryProxyConnector)) {
                 ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.EVENT_MAPPER_IMPROPERLY_INITIALIZED, methodName, null, repositoryConnector.getServerName());
             }
@@ -108,6 +119,10 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
             }
             if (metadataCollection == null) {
                 try {
+                    if (client != null) {
+                        // replace with the test client
+                        omrsEventProducer.setClient(client);
+                    }
                     omrsEventProducer.connectTo3rdParty();
                 } catch (RepositoryErrorException e) {
                     ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
@@ -116,7 +131,9 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         }
 
         this.pollingThread = new PollingThread();
-        pollingThread.start();
+        if (!testing) {
+            pollingThread.start();
+        }
     }
 
     /**
@@ -127,7 +144,13 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         super.disconnect();
         final String methodName = "disconnect";
         pollingThread.stop();
-        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
+        if (auditLog !=null) {
+            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
+        }
+    }
+
+    public void setTesting() {
+        testing = true;
     }
 
 
@@ -150,7 +173,9 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
 
         void stop() {
             if (!running.compareAndSet(true, false)) {
-                auditLog.logMessage("stop", HMSOMRSAuditCode.POLLING_THREAD_INFO_ALREADY_STOPPED.getMessageDefinition());
+                if (auditLog !=null) {
+                    auditLog.logMessage("stop", HMSOMRSAuditCode.POLLING_THREAD_INFO_ALREADY_STOPPED.getMessageDefinition());
+                }
             }
         }
         @Override
@@ -170,14 +195,20 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
                         if (running.get()) {
                             // come out of synchronization when waiting.
                             //  wait the polling interval.
-                            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_PRE_WAIT.getMessageDefinition());
+                            if (auditLog !=null) {
+                                auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_PRE_WAIT.getMessageDefinition());
+                            }
                             try {
                                 Thread.sleep(refreshInterval);
-                                auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_POST_WAIT.getMessageDefinition());
+                                if (auditLog !=null) {
+                                    auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_POST_WAIT.getMessageDefinition());
+                                }
                             } catch (InterruptedException e) {
                                 // should not happen as there is only one thread
                                 // if it happens then continue in the while
-                                auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_INTERRUPTED_EXCEPTION.getMessageDefinition());
+                                if (auditLog !=null) {
+                                    auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_INTERRUPTED_EXCEPTION.getMessageDefinition());
+                                }
                             }
                         }
                     } catch (Exception e) {
@@ -191,7 +222,9 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
                         if (cause.getMessage() != null) {
                             causeMsg = cause.getMessage();
                         }
-                        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(msg, causeMsg));
+                        if (auditLog !=null) {
+                            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(msg, causeMsg));
+                        }
                     } finally {
                         // stop the thread if we came out of the loop.
                         this.stop();
