@@ -1,14 +1,14 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
  * Copyright Contributors to the ODPi Egeria project.
+ *
+ * To build standard version:
+ *   ./gradlew build
+ *
+ * To build version to support IBM Data Engine
+ * See https://cloud.ibm.com/docs/sql-query?topic=sql-query-hive_metastore#apache-hive-metastore-3.1.2-compatible-client
+ *  ./gradlew build -Pibmhive
  */
-
-// Allow use of maven central to pickup additional plugins
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-}
 
 plugins {
     id 'java-library'
@@ -16,11 +16,11 @@ plugins {
     id 'idea'
     id 'maven-publish'
     // Checks for unnecessary & problematic dependencies
-    id 'com.autonomousapps.dependency-analysis' version "1.13.1"
+    id 'com.autonomousapps.dependency-analysis' version "1.19.0"
     // helps resolve log implementation clashes
     id 'dev.jacomet.logging-capabilities' version "0.10.0"
     // This plugin helps resolve jakarta/javax clashes
-    id 'de.jjohannes.java-ecosystem-capabilities' version "0.5"
+    id 'org.gradlex.java-ecosystem-capabilities' version "1.1"
 }
 
 // Only do signing when running under github actinos
@@ -36,7 +36,7 @@ repositories {
         url "https://maven.atlassian.com/3rdparty"
     }
     // uncomment to pick up from local ~/.m2 - but can be unpredictable. recommend to use maven central and snapshots
-//    mavenLocal()
+    // mavenLocal()
 
     // Repository for custom IBM hive connector
     if (project.hasProperty("ibmhive")) {
@@ -54,31 +54,6 @@ repositories {
     // https://us.sql-query.cloud.ibm.com/download/catalog/hive-metastore-standalone-client-3.1.2-sqlquery.jar
 }
 
-// ensures we exclude slf4j only for compile only. So it can be picked up as a transitive dependancy in the junits
-configurations.compileOnly {
-    exclude  group: 'org.slf4j', module: 'slf4j-api'
-}
-configurations.all {
-    // check for updates every build - critical when using Snapshots
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-    // Explicit exclusions for transitive dependencies - logging
-    // picked up from hive libraries, we need to allow Egeria to decide logging implementation
-    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    exclude group: 'org.slf4j', module: 'slf4j-reload4j'
-    exclude group: 'ch.qos.reload4j', module: 'reload4j'
-    exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
-    // TODO: Excluding protobuf may not be needed as we are now shading
-    exclude group: 'com.google.protobuf', module: 'protobuf-java'
-
-    // exclude the following dependencies that we do not use, but bring in vulnerabilities from
-    // hadoop commons
-    exclude group: "org.eclipse.jetty"
-    exclude group: 'log4j', module: 'log4j'
-    exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
-    exclude group: 'io.netty'
-    exclude group: 'com.google.guava'
-
-}
 
 // Project information
 group = 'org.odpi.egeria'
@@ -87,14 +62,14 @@ ext.name = 'Egeria Hive Metastore Connector'
 description = 'Egeria Connector for Hive Metastore'
 
 // Versions - most should be picked up from the import of the egeria base POM
-// TODO: Versions already in pom can be removed
 ext {
     egeriaversion = '3.15'
     cachingconnectorversion = '1.0-SNAPSHOT'
     hiveVersion = '3.1.3'
     ibmHiveVersion = '3.1.2'
-    hadoopVersion = '3.3.3'
-    thriftVersion = '0.13.0'
+    hadoopVersion = '3.3.4'
+    hiveStorageVersion = '2.7.0'
+    thriftVersion = '0.17.0'
 }
 
 
@@ -105,59 +80,57 @@ dependencies {
     implementation platform("org.odpi.egeria:egeria:${egeriaversion}")
 
     // Only used for build - already present in server chassis at runtime - similar to 'provided' with maven
-    compileOnly "org.odpi.egeria:audit-log-framework"
-
     compileOnly "com.fasterxml.jackson.core:jackson-databind"
     compileOnly "com.fasterxml.jackson.core:jackson-annotations"
     compileOnly "com.fasterxml.jackson.core:jackson-core"
     compileOnly "org.springframework:spring-core"
+    compileOnly "org.odpi.egeria:audit-log-framework"
     compileOnly "org.odpi.egeria:open-connector-framework"
     compileOnly "org.odpi.egeria:open-metadata-types"
-    compileOnly "org.odpi.egeria:audit-log-framework"
     compileOnly "org.odpi.egeria:repository-services-implementation"
-    compileOnly "org.odpi.egeria:admin-services-api"
-    compileOnly "org.odpi.egeria:connector-configuration-factory"
     compileOnlyApi "org.odpi.egeria:repository-services-apis"
     compileOnly "org.odpi.egeria:admin-services-api"
-    compileOnly "org.odpi.egeria:audit-log-framework"
+    compileOnly "org.odpi.egeria:connector-configuration-factory"
+    compileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+
+    // Include at compile & runtime - to support use of connector
+    implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
     implementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
-
-    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compileOnly "org.springframework:spring-core:${springwebVersion}"
-    compileOnly "org.odpi.egeria:open-connector-framework:${egeriaversion}"
-    compileOnly "org.odpi.egeria:open-metadata-types:${egeriaversion}"
-    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
-    compileOnly "org.odpi.egeria:repository-services:${egeriaversion}"
-    compileOnly "org.odpi.egeria:repository-services-implementation:${egeriaversion}"
-    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
-    compileOnly "org.odpi.egeria:connector-configuration-factory:${egeriaversion}"
-    testImplementation "org.odpi.egeria:repository-services-apis:${egeriaversion}"
-    compileOnly "org.odpi.egeria:admin-services-api:${egeriaversion}"
-    compileOnly "org.odpi.egeria:audit-log-framework:${egeriaversion}"
-    // not yet released, for convenience we will include this for runtime
-    implementation "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
-
     implementation 'org.apache.thrift:libthrift:${thriftVersion}'
 
-    // Use standard version by default, replace by alternate library for IBM config
+    // Use standard client library version by default, replace by alternate library for IBM config
+    // and resolve some differences in dependencies
     if (project.hasProperty("ibmhive")) {
-        implementation "com.ibm.hive:hive-metastore-standalone-client:${ibmHiveVersion}"
+        api("com.ibm.hive:hive-metastore-standalone-client:${ibmHiveVersion}")
     } else {
-        implementation "org.apache.hive:hive-standalone-metastore:${hiveVersion}"
+        api("org.apache.hive:hive-standalone-metastore:${hiveVersion}")
+        testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
     }
-    // Hadoop common
-    implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
 
     // Only needed to compile test code
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
-    testImplementation "org.odpi.egeria:repository-services-apis"
-    testImplementation "org.odpi.egeria:open-connector-framework"
+    //testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
+    testCompileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+}
 
-
+// Further refinement - Resolve some dependency clashes/issues
+configurations.all {
+    // check for updates every build - critical when using Snapshots
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    // Resolve logging clashes - consistent with Egeria
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+    exclude group: 'ch.qos.reload4j', module: 'reload4j'
+    exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+    exclude group: 'log4j', module: 'log4j'
+    // Exclusions such as protobuf may be vulnarable - will not affect core egeria as in shaded library
+    // exclude here, and remove from shading to use egeria versions, or add explicit dependency override
+    //exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    //exclude group: "org.eclipse.jetty"
+    //exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
+    //exclude group: 'io.netty'
+    //exclude group: 'com.google.guava'
 }
 
 // Testing
@@ -202,13 +175,6 @@ javadoc {
     }
 }
 
-configurations.all {
-    resolutionStrategy {
-        force('org.apache.thrift:libthrift:0.13.0')
-//        force('org.apache.hadoop:hadoop-common:3.1.3')
-    }
-}
-
 // Build an uber jar with dependencies.
 shadowJar {
     archiveClassifier = 'jar-with-dependencies'
@@ -231,8 +197,11 @@ shadowJar {
     relocate("org.xbill", "org.odpi.openmetadata.shaded.xbill")
     relocate("com.ctc.wstx", "org.odpi.openmetadata.shaded.wstx")
     relocate("com.sun", "org.odpi.openmetadata.shaded.sun")
-    // servlet, jdo, realtime, annotation
-    relocate("javax", "org.odpi.openmetadata.shaded.javax")
+    // servlet, jdo, realtime, annotation - need to be explicit, or Hadoop Configuration will fail to load from java.javax.xml
+    relocate("javax.servlet", "org.odpi.openmetadata.shaded.javax.servlet")
+    relocate("javax.jdo", "org.odpi.openmetadata.shaded.javax.jdo")
+    relocate("javax.realtime", "org.odpi.openmetadata.shaded.javax.realtime")
+    relocate("javax.annotation", "org.odpi.openmetadata.shaded.javax.annotation")
     relocate("org.xerial.snappy", "org.odpi.openmetadata.shaded.snappy")
     relocate("com.fasterxml", "org.odpi.openmetadata.shaded.fasterxml")
     relocate("org.codehaus", "org.odpi.openmetadata.shaded.codehaus")
