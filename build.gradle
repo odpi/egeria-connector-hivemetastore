@@ -112,6 +112,9 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     //testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
     testCompileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+    testRuntimeOnly "org.odpi.egeria:repository-services-apis"
+    testRuntimeOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+
 }
 
 // Further refinement - Resolve some dependency clashes/issues
