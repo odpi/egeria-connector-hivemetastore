@@ -281,14 +281,18 @@ abstract public class OMRSEventProducer
             Throwable cause = e.getCause();
             if (cause == null) {
                 //TODO change auditlog
-                auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION.getMessageDefinition(msg));
+                if (auditLog != null) {
+                    auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION.getMessageDefinition(msg));
+                }
             } else {
                 String causeMsg = "No cause message";
                 if (cause.getMessage() != null) {
                     causeMsg = cause.getMessage();
                 }
                 //TODO change auditlog
-                auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(msg, causeMsg));
+                if (auditLog != null) {
+                    auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_POLL_LOOP_GOT_AN_EXCEPTION_WITH_CAUSE.getMessageDefinition(msg, causeMsg));
+                }
             }
         } catch (TypeErrorException e) {
             // TODO audit log
@@ -422,7 +426,9 @@ abstract public class OMRSEventProducer
         int typesAvailableCount = 0;
         int retryCount = 0;
         while ((typesAvailableCount != supportedCount)) {
-            auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRING_TYPES_LOOP.getMessageDefinition(typesAvailableCount + "", supportedCount + "", retryCount + ""));
+            if (auditLog != null) {
+                auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRING_TYPES_LOOP.getMessageDefinition(typesAvailableCount + "", supportedCount + "", retryCount + ""));
+            }
             // only come out the while loop when we can get all of the supported types in one iteration.
             typesAvailableCount = 0;
             if (typeNameToGuidMap == null) {
@@ -434,7 +440,9 @@ abstract public class OMRSEventProducer
                 TypeDef typeDef = repositoryHelper.getTypeDefByName("HMSOMRSRepositoryEventMapper",
                         typeName);
                 if (typeDef != null) {
-                    auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRING_TYPES_LOOP_FOUND_TYPE.getMessageDefinition(typeName));
+                    if (auditLog != null) {
+                        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRING_TYPES_LOOP_FOUND_TYPE.getMessageDefinition(typeName));
+                    }
                     typeNameToGuidMap.put(typeName, typeDef.getGUID());
                     typesAvailableCount++;
                 }
@@ -451,12 +459,15 @@ abstract public class OMRSEventProducer
                     //
                     // Increment the retry count, in case this happens everytime
                     retryCount++;
-                    auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRING_TYPES_LOOP_INTERRUPTED_EXCEPTION.getMessageDefinition());
-                }
+                    if (auditLog != null) {
+                        auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRING_TYPES_LOOP_INTERRUPTED_EXCEPTION.getMessageDefinition());
+
+                    }  }
             } else if (typesAvailableCount == supportedCount) {
                 // log to say we have all the types we need
-                auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRED_ALL_TYPES.getMessageDefinition());
-
+                if (auditLog != null) {
+                    auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_ACQUIRED_ALL_TYPES.getMessageDefinition());
+                }
             }
 
             if (retryCount == 20) { // TODO  Should this be in configuration?

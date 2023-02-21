@@ -4,24 +4,36 @@ package org.odpi.egeria.connectors.hms.eventmapper;
 
 import org.apache.hadoop.hive.metastore.api.Table;
 
-import java.util.List;
+import java.util.*;
 
 public class MockMetaStoreClient extends StubMetaStoreClient {
 
-
+    private Map<String, Table> tableMap = new HashMap<>();
     @Override
     public List<String> getTables(String catName, String dbName, String pattern) {
-        return null;
+        // TODO test different catNames and dbNames
+        List<String> tables = new ArrayList<>();
+        Set<Map.Entry<String, Table>> entrySet = tableMap.entrySet();
+        for (Map.Entry<String, Table> entry: entrySet) {
+            tables.add(entry.getKey());
+        }
+        return tables;
     }
 
     @Override
     public List<String> getCatalogs() {
-        return null;
+        List<String> catalogList = new ArrayList<>();
+        catalogList.add("cat1");
+
+        return catalogList;
     }
 
     @Override
     public List<String> getAllDatabases() {
-        return null;
+        List<String> dbList = new ArrayList<>();
+        dbList.add("db1");
+
+        return dbList;
     }
 
     @Override
@@ -30,6 +42,10 @@ public class MockMetaStoreClient extends StubMetaStoreClient {
     }
     @Override
     public Table getTable(String catName, String dbName, String tableName) {
-        return null;
+        return tableMap.get(tableName);
+    }
+
+    public void addTable(Table table) {
+        tableMap.put(table.getTableName(), table);
     }
 }
