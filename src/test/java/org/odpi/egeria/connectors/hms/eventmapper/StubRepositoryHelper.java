@@ -12,10 +12,8 @@ import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollec
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryconnector.OMRSRepositoryHelper;
 import org.odpi.openmetadata.repositoryservices.ffdc.exception.*;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
 @SuppressWarnings("deprecation")
 public class StubRepositoryHelper implements OMRSRepositoryHelper {
 
@@ -171,7 +169,32 @@ public class StubRepositoryHelper implements OMRSRepositoryHelper {
 
     @Override
     public Relationship getSkeletonRelationship(String sourceName, String metadataCollectionId, InstanceProvenanceType provenanceType, String userName, String typeName) throws TypeErrorException {
-        return null;
+
+        Relationship relationship = new Relationship();
+        String       guid         = UUID.randomUUID().toString();
+
+        relationship.setHeaderVersion(InstanceAuditHeader.CURRENT_AUDIT_HEADER_VERSION);
+        relationship.setInstanceProvenanceType(provenanceType);
+        relationship.setMetadataCollectionId(metadataCollectionId);
+        relationship.setMetadataCollectionName("metadataCollectionName");
+        relationship.setCreateTime(new Date());
+        relationship.setGUID(guid);
+        relationship.setVersion(1L);
+InstanceType instanceType = new InstanceType(TypeDefCategory.RELATIONSHIP_DEF,
+       "typeDefGUID",
+       typeName,
+       0L,
+        "typeDefDescription",
+       "typeDefDescriptionGUID",
+        null,
+null, //        validStatusList,
+        null);
+        relationship.setType(instanceType);
+        relationship.setStatus(InstanceStatus.ACTIVE);
+        relationship.setCreatedBy(userName);
+        relationship.setInstanceURL("instance URL");
+
+        return relationship;
     }
 
     @Override
