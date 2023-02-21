@@ -219,7 +219,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
                             msg = e.getMessage();
                         }
                         String causeMsg = "No cause message";
-                        if (cause.getMessage() != null) {
+                        if (cause != null && cause.getMessage() != null) {
                             causeMsg = cause.getMessage();
                         }
                         if (auditLog !=null) {
