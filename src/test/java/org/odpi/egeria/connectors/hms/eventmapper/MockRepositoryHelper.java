@@ -5,10 +5,7 @@ package org.odpi.egeria.connectors.hms.eventmapper;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.odpi.egeria.connectors.hms.helpers.SupportedTypes;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.*;
-import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.EntityDef;
-import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDef;
-import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDefCategory;
-import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.TypeDefSummary;
+import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.typedefs.*;
 import org.odpi.openmetadata.repositoryservices.ffdc.OMRSErrorCode;
 import org.odpi.openmetadata.repositoryservices.ffdc.exception.TypeErrorException;
 
@@ -64,5 +61,42 @@ public class MockRepositoryHelper extends StubRepositoryHelper {
         InstanceType instanceType = new InstanceType();
         instanceType.setTypeDefName(typeDefSummary.getName());
         return instanceType;
+    }
+    @Override
+    public InstanceProperties addStringPropertyToInstance(String             sourceName,
+                                                          InstanceProperties properties,
+                                                          String             propertyName,
+                                                          String             propertyValue,
+                                                          String             methodName)
+    {
+        InstanceProperties  resultingProperties;
+
+        if (propertyValue != null)
+        {
+            if (properties == null)
+            {
+                resultingProperties = new InstanceProperties();
+            }
+            else
+            {
+                resultingProperties = properties;
+            }
+
+
+            PrimitivePropertyValue primitivePropertyValue = new PrimitivePropertyValue();
+
+            primitivePropertyValue.setPrimitiveDefCategory(PrimitiveDefCategory.OM_PRIMITIVE_TYPE_STRING);
+            primitivePropertyValue.setPrimitiveValue(propertyValue);
+            primitivePropertyValue.setTypeName(PrimitiveDefCategory.OM_PRIMITIVE_TYPE_STRING.getName());
+            primitivePropertyValue.setTypeGUID(PrimitiveDefCategory.OM_PRIMITIVE_TYPE_STRING.getGUID());
+
+            resultingProperties.setProperty(propertyName, primitivePropertyValue);
+
+            return resultingProperties;
+        }
+        else
+        {
+            return properties;
+        }
     }
 }

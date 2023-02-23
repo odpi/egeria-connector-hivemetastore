@@ -63,6 +63,8 @@ abstract public class OMRSEventProducer
     private String catName = null;
     private String dbName = null;
     private boolean sendPollEvents = false;
+
+    private boolean includeDeployedSchema = false;
     private boolean cacheIntoCachingRepository = true;
     private String configuredEndpointAddress = null;
 
@@ -75,7 +77,7 @@ abstract public class OMRSEventProducer
     Map<String, List<Relationship>> qualifiedTableNameToRelationshipMap = new HashMap<>();
 
     CachedRepositoryAccessor cachedRepositoryAccessor = null;
-    String baseCanonicalName = null;
+//    String baseCanonicalName = null;
 
     String relationalDBTypeGuid = null;
 
@@ -171,6 +173,11 @@ abstract public class OMRSEventProducer
         if (configuredCache != null) {
             cacheIntoCachingRepository = configuredCache;
         }
+
+        Boolean configuredIncludeDeployedschema = (Boolean) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.INCLUDE_DEPLOYED_SCHEMA);
+        if (configuredIncludeDeployedschema != null) {
+            includeDeployedSchema = configuredIncludeDeployedschema;
+        }
         configuredEndpointAddress = (String) configurationProperties.get(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS);
         Map<String, String> configuredConnectionSecureProperties = null;
         try {
@@ -206,10 +213,9 @@ abstract public class OMRSEventProducer
      * Get the names of the tables from the 3rd party technology
      * @param catName catalog name
      * @param dbName database name
-     * @param baseCanonicalName base canonical name - used to construct qualified names
      * @return a list of all the table names
      */
-    protected abstract List<String> getTableNamesFrom3rdParty(String catName, String dbName, String baseCanonicalName);
+    protected abstract List<String> getTableNamesFrom3rdParty(String catName, String dbName);
 
     /**
      * Get the list of all catalog names from the 3rd party.
@@ -228,11 +234,11 @@ abstract public class OMRSEventProducer
      * Get a ConnectorTable (a technology independant representation of a table) from the 3rd party technology
      * @param catName catalog name
      * @param dbName database name
-     * @param baseCanonicalName base canonical name - used to construct qualified names
+     * @param qualifiedName  used to construct qualified names
      * @param tableName name of the table to retrieve
      * @return a Connector table
      */
-    protected abstract ConnectorTable getTableFrom3rdParty(String catName, String dbName, String baseCanonicalName, String tableName);
+    protected abstract ConnectorTable getTableFrom3rdParty(String catName, String dbName, String qualifiedName, String tableName);
 
     /**
      * Get the latest table content , construct Egeria events from them and send the events
@@ -316,13 +322,14 @@ abstract public class OMRSEventProducer
         qualifiedTableNameToEntityMap = new HashMap<>();
         qualifiedTableNameToRelationshipMap = new HashMap<>();
         // populate the above lists with the database and schema entities and relationships
+        String qualifiedName = null;
         if (catName == null) {
-            baseCanonicalName = currentDBName;
+            qualifiedName = currentDBName;
         } else {
-            baseCanonicalName = catName + SupportedTypes.SEPARATOR_CHAR + currentDBName;
+            qualifiedName = catName + SupportedTypes.SEPARATOR_CHAR + currentDBName;
         }
         // collect the entities and relationships above the table(s)
-        collectEntitiesAndRelationshipsAboveTable(currentDBName);
+        qualifiedName = collectEntitiesAndRelationshipsAboveTable(currentDBName, qualifiedName);
 
         if (cacheIntoCachingRepository) {
             refreshRepository(aboveTableEntityList, aboveTableRelationshipList );
@@ -332,11 +339,11 @@ abstract public class OMRSEventProducer
             issueBatchEvent(aboveTableEntityList, aboveTableRelationshipList);
         }
 
-        List<String> tableNames = getTableNamesFrom3rdParty(catName, currentDBName, baseCanonicalName);
+        List<String> tableNames = getTableNamesFrom3rdParty(catName, currentDBName);
         if (tableNames != null && !tableNames.isEmpty()) {
             // create each table and relationship
             for (String tableName : tableNames) {
-                ConnectorTable connectorTable = getTableFrom3rdParty(catName, currentDBName, baseCanonicalName, tableName);
+                ConnectorTable connectorTable = getTableFrom3rdParty(catName, currentDBName, qualifiedName, tableName);
                 qualifiedTableNameToEntityMap = new HashMap<>();
                 qualifiedTableNameToRelationshipMap = new HashMap<>();
                 convertToConnectorTableToEntitiesAndRelationships(methodName, connectorTable);
@@ -356,45 +363,75 @@ abstract public class OMRSEventProducer
 
     /**
      * Collect the Entities and relationships above the tables(s)
-     *
+     * @param currentDBName name of the database currently being processed
+     * @param qualifiedName value to use as a basis of entities qualifiedNames
+     * @return qualified name prefix
      * @throws ConnectorCheckedException connector exception
      */
-    private void collectEntitiesAndRelationshipsAboveTable(String currentDBName) throws ConnectorCheckedException {
+    private String collectEntitiesAndRelationshipsAboveTable(String currentDBName, String qualifiedName) throws ConnectorCheckedException {
         String methodName = "collectEntitiesAndRelationshipsAboveTable";
 
         // Create database
 
         EntityDetail databaseEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                 SupportedTypes.DATABASE,
-                baseCanonicalName,
-                baseCanonicalName,
+                currentDBName,
+                qualifiedName,
                 null,
                 false);
         databaseGUID = databaseEntity.getGUID();
         saveEntityReferenceCopy(databaseEntity);
 
 
-        createConnectionOrientatedEntities(baseCanonicalName, databaseEntity);
+        createConnectionOrientatedEntities(qualifiedName, databaseEntity);
+        String  deployedDatabaseSchemaEntityGuid = null;
+        if (includeDeployedSchema) {
+            qualifiedName = qualifiedName +SupportedTypes.SEPARATOR_CHAR + "defaultDeployedSchema";
+            EntityDetail deployedDatabaseSchemaEntity = mapperHelper.getEntityDetailSkeleton(methodName,
+                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA,
+                    SupportedTypes.DEFAULT_DEPLOYED_SCHEMA_TOKEN_NAME,
+                    qualifiedName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.DEFAULT_DEPLOYED_SCHEMA_TOKEN_NAME,
+                    null,
+                    false);
+            saveEntityReferenceCopy(deployedDatabaseSchemaEntity);
 
-
+            deployedDatabaseSchemaEntityGuid = deployedDatabaseSchemaEntity.getGUID();
+        }
+        qualifiedName = qualifiedName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.DEFAULT_RELATIONAL_DB_SCHEMA_TYPE;
         // create RelationalDBType
         EntityDetail relationalDBTypeEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                 SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,
-                currentDBName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.SCHEMA_TOKEN_NAME,
-                baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "schemaType",
+                SupportedTypes.DEFAULT_RELATIONAL_DB_SCHEMA_TYPE,
+                qualifiedName,
                 null,
                 false);
         saveEntityReferenceCopy(relationalDBTypeEntity);
         relationalDBTypeGuid = relationalDBTypeEntity.getGUID();
 
-        // create Relationship
+        // create Relationships
 
-        aboveTableRelationshipList.add(mapperHelper.createReferenceRelationship(SupportedTypes.ASSET_SCHEMA_TYPE,
-                databaseGUID,
-                SupportedTypes.DATABASE,
-                relationalDBTypeEntity.getGUID(),
-                SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE));
-
+        if (includeDeployedSchema) {
+            // asset => deployed schema
+            aboveTableRelationshipList.add(mapperHelper.createReferenceRelationship(SupportedTypes.ASSET_SCHEMA_TYPE,
+                    databaseGUID,
+                    SupportedTypes.DATABASE,
+                    deployedDatabaseSchemaEntityGuid,
+                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA));
+            // deployed schema => relational schema type
+            aboveTableRelationshipList.add(mapperHelper.createReferenceRelationship(SupportedTypes.ASSET_SCHEMA_TYPE,
+                    deployedDatabaseSchemaEntityGuid,
+                    SupportedTypes.DEPLOYED_DATABASE_SCHEMA,
+                    relationalDBTypeEntity.getGUID(),
+                    SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE));
+        } else {
+            // asset => relational schema type
+            aboveTableRelationshipList.add(mapperHelper.createReferenceRelationship(SupportedTypes.ASSET_SCHEMA_TYPE,
+                    databaseGUID,
+                    SupportedTypes.DATABASE,
+                    relationalDBTypeGuid,
+                    SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE));
+        }
+        return qualifiedName;
     }
 
     /**

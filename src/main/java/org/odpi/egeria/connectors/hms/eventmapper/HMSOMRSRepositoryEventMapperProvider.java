@@ -41,6 +41,8 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
 
     static final String CONNECTION_SECURED_PROPERTIES = "connectionSecuredProperties";
 
+    static final String INCLUDE_DEPLOYED_SCHEMA = "includeDeployedSchema";
+
     /**
      * If this is set then we use this as the endpoint address (e.g. the JDBC URL)
      * If it is not set then, no connection is associated with the asset
@@ -74,6 +76,7 @@ public class HMSOMRSRepositoryEventMapperProvider extends OMRSRepositoryConnecto
         knownConfigProperties.add(METADATA_STORE_PASSWORD);
         knownConfigProperties.add(USE_SSL);
         knownConfigProperties.add(CONNECTION_SECURED_PROPERTIES);
+        knownConfigProperties.add(INCLUDE_DEPLOYED_SCHEMA);
 
         connectorType.setRecognizedConfigurationProperties(knownConfigProperties);
 
