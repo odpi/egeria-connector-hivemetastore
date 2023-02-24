@@ -3,6 +3,10 @@
 package org.odpi.egeria.connectors.hms.eventmapper;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
@@ -224,19 +228,9 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 //
 //            }
             connectorTable = getTableFromHMSTable(qualifiedName, hmsTable);
-            Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
+//            Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
+//
 
-            while (colsIterator.hasNext()) {
-                FieldSchema fieldSchema = colsIterator.next();
-                String columnName = fieldSchema.getName();
-                String dataType = fieldSchema.getType();
-
-                var column = new ConnectorColumn();
-                column.setName(columnName);
-                column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
-                column.setType(dataType);
-                connectorTable.addColumn(column);
-            }
         }
         return connectorTable;
     }
@@ -260,16 +254,74 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         connectorTable.setType(tableType);
         connectorTable.setType(typeName);
 
-        Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
+        if (tableType.equals("EXTERNAL_TABLE")) {
+            Map<String, String> parameters = hmsTable.getParameters();
+            String  numberOfSchemaPartsString = parameters.get("spark.sql.sources.schema.numParts");
+            if (numberOfSchemaPartsString != null) {
+                Integer numberOfSchemaParts = Integer.valueOf(numberOfSchemaPartsString);
+                for (int i=0; i< numberOfSchemaParts; i++) {
+                    String schemaAsJSON = parameters.get("spark.sql.sources.schema." + i);
+                    ObjectMapper objectMapper = new ObjectMapper();
 
-        while (colsIterator.hasNext()) {
-            var column = new ConnectorColumn();
-            FieldSchema fieldSchema = colsIterator.next();
-            String columnName = fieldSchema.getName();
-            column.setName(columnName);
-            column.setType(fieldSchema.getType());
-            column.setQualifiedName(tableCanonicalName + SupportedTypes.SEPARATOR_CHAR + columnName);
+                    try {
+                        JsonNode topJsonNode = objectMapper.readTree(schemaAsJSON);
+                        Iterator<String> iterator = topJsonNode.fieldNames();
+                        while (iterator.hasNext()) {
+                            String field = iterator.next();
+                            if (field.equals("fields")) {
+                                JsonNode fieldsJsonNode = topJsonNode.get("fields");
+                                if (fieldsJsonNode.isArray()) {
+                                    ArrayNode fieldsArrayNode = (ArrayNode) fieldsJsonNode;
+                                    for(int j = 0; j <fieldsArrayNode.size(); j++) {
+                                        JsonNode columnJsonNode = fieldsArrayNode.get(i);
+                                        Iterator<Map.Entry<String, JsonNode>> columnDetails = columnJsonNode.fields();
+                                        String columnName = null;
+                                        String dataType = null;
+                                        while(columnDetails.hasNext()) {
+                                            Map.Entry<String, JsonNode> columnDetail = columnDetails.next();
+                                            String columnDetailName  = columnDetail.getKey();
+                                            String columnDetailValue = columnDetail.getValue().asText();
+                                            if (columnDetailName.equals("name")) {
+                                                columnName = columnDetailValue;
+                                            }
+                                            if (columnDetailName.equals("type")) {
+                                                dataType = columnDetailValue;
+                                            }
+                                        }
+                                        if (columnName !=null && dataType !=null) {
+                                            var column = new ConnectorColumn();
+                                            column.setName(columnName);
+                                            column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
+                                            column.setType(dataType);
+                                            connectorTable.addColumn(column);
+                                        }
+                                    }
+
+                                }
+                            }
+                        }
+
+                    } catch (JsonProcessingException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+
+        } else {
+            Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
+            while (colsIterator.hasNext()) {
+                FieldSchema fieldSchema = colsIterator.next();
+                String columnName = fieldSchema.getName();
+                String dataType = fieldSchema.getType();
+
+                var column = new ConnectorColumn();
+                column.setName(columnName);
+                column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
+                column.setType(dataType);
+                connectorTable.addColumn(column);
+            }
         }
+
 
         return connectorTable;
     }

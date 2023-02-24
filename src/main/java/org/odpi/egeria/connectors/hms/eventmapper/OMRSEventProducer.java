@@ -513,22 +513,22 @@ abstract public class OMRSEventProducer
         }
     }
 
-
-
-    /**
-     * convert the connector tables to entities and relationships
-     *
-     * @param connectorTables connector tables
-     * @throws ConnectorCheckedException connector exception
-     * @throws TypeErrorException        type exception
-     */
-    void convertToConnectorTablesToEntitiesAndRelationships(List<ConnectorTable> connectorTables) throws ConnectorCheckedException, TypeErrorException {
-        String methodName = "convertToConnectorTablesToEntitiesAndRelationships";
-
-        for (ConnectorTable connectorTable : connectorTables) {
-            convertToConnectorTableToEntitiesAndRelationships(methodName, connectorTable);
-        }
-    }
+//
+//
+//    /**
+//     * convert the connector tables to entities and relationships
+//     *
+//     * @param connectorTables connector tables
+//     * @throws ConnectorCheckedException connector exception
+//     * @throws TypeErrorException        type exception
+//     */
+//    void convertToConnectorTablesToEntitiesAndRelationships(List<ConnectorTable> connectorTables) throws ConnectorCheckedException, TypeErrorException {
+//        String methodName = "convertToConnectorTablesToEntitiesAndRelationships";
+//
+//        for (ConnectorTable connectorTable : connectorTables) {
+//            convertToConnectorTableToEntitiesAndRelationships(methodName, connectorTable);
+//        }
+//    }
 
     synchronized private void convertToConnectorTableToEntitiesAndRelationships(String methodName, ConnectorTable connectorTable) throws ConnectorCheckedException, TypeErrorException {
         String tableQualifiedName = connectorTable.getQualifiedName();
