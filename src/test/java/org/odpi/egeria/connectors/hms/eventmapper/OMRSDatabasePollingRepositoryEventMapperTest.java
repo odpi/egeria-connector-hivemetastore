@@ -23,7 +23,9 @@ import org.odpi.openmetadata.frameworks.connectors.properties.beans.ConnectorTyp
 import org.odpi.openmetadata.adapters.repositoryservices.caching.repositoryconnector.CachingOMRSRepositoryProxyConnectorProvider;
 import org.odpi.openmetadata.adapters.repositoryservices.caching.repositoryconnector.CachingOMRSRepositoryProxyConnector;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.OMRSMetadataCollection;
+import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.EntityDetail;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.InstanceGraph;
+import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.PrimitivePropertyValue;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryconnector.OMRSRepositoryHelper;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryconnector.OMRSRepositoryValidator;
 
@@ -35,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 //import java.io.IOException;
 //import java.nio.file.Files;
@@ -55,7 +58,22 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
     @Test
     protected void mapperTestNoHMSContent() throws ConnectionCheckedException, IllegalAccessException, ConnectorCheckedException, NoSuchFieldException {
-        OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = getOmrsDatabasePollingRepositoryEventMapper();
+        Map<String , Object> configProperties = new HashMap<>();
+        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, "default");
+        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, "spark");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX, "data-engine::");
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER, "testUser");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_PASSWORD, "testPW");
+        Map<String, String> connectionSecuredPropertiesMap = new HashMap<>();
+        connectionSecuredPropertiesMap.put("aaa","aaa-value");
+        connectionSecuredPropertiesMap.put("bbb","bbb-value");
+        connectionSecuredPropertiesMap.put("ccc","ccc-value");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES,connectionSecuredPropertiesMap);
+
+        OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = getOmrsDatabasePollingRepositoryEventMapper(configProperties);
 
         omrsDatabasePollingRepositoryEventMapper.setTesting();
         omrsDatabasePollingRepositoryEventMapper.setClient(new MockMetaStoreClient());
@@ -66,10 +84,28 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         assert(graphs.get(0).getEntities().size() == 5);
         assert(graphs.get(0).getRelationships().size() == 4);
 
+        checkQualifiedNamesAreUnique(graphs);
+
     }
     @Test
     protected void mapperTestHMSContent() throws ConnectionCheckedException, IllegalAccessException, ConnectorCheckedException, NoSuchFieldException, IOException {
-        OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = getOmrsDatabasePollingRepositoryEventMapper();
+        Map<String , Object> configProperties = new HashMap<>();
+        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, "default");
+        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, "spark");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX, "data-engine::");
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER, "testUser");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_PASSWORD, "testPW");
+        Map<String, String> connectionSecuredPropertiesMap = new HashMap<>();
+        connectionSecuredPropertiesMap.put("aaa","aaa-value");
+        connectionSecuredPropertiesMap.put("bbb","bbb-value");
+        connectionSecuredPropertiesMap.put("ccc","ccc-value");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES,connectionSecuredPropertiesMap);
+
+
+        OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = getOmrsDatabasePollingRepositoryEventMapper(configProperties);
         MockMetaStoreClient mockMetaStoreClient = new MockMetaStoreClient();
         omrsDatabasePollingRepositoryEventMapper.setTesting();
 
@@ -100,6 +136,77 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         assert(graphs.size() == 2);
         assert(graphs.get(0).getEntities().size() == 5);
         assert(graphs.get(0).getRelationships().size() == 4);
+        assert(graphs.get(1).getEntities().size() == 3);
+        assert(graphs.get(1).getRelationships().size() == 3);
+
+        checkQualifiedNamesAreUnique(graphs);
+
+    }
+
+    private void checkQualifiedNamesAreUnique(List<InstanceGraph> graphs) {
+        Set<String> qualifiedNames = new HashSet<>();
+        for (InstanceGraph graph: graphs) {
+            List<EntityDetail> entityDetails = graph.getEntities();
+            for (EntityDetail entityDetail: entityDetails) {
+                PrimitivePropertyValue value = (PrimitivePropertyValue)entityDetail.getProperties().getInstanceProperties().get("qualifiedName");
+                String qualifiedName = (String)value.getPrimitiveValue();
+                assertNotNull(qualifiedName);
+                assertFalse((qualifiedNames.contains(qualifiedName)));
+                qualifiedNames.add(qualifiedName);
+            }
+        }
+    }
+
+    @Test
+    protected void mapperTestHMSContentIncludeDeployedDBSchema() throws ConnectionCheckedException, IllegalAccessException, ConnectorCheckedException, NoSuchFieldException, IOException {
+        Map<String , Object> configProperties = new HashMap<>();
+        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, "default");
+        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, "spark");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX, "data-engine::");
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
+        configProperties.put( HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER, "testUser");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_PASSWORD, "testPW");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.INCLUDE_DEPLOYED_SCHEMA, true);
+        Map<String, String> connectionSecuredPropertiesMap = new HashMap<>();
+        connectionSecuredPropertiesMap.put("aaa","aaa-value");
+        connectionSecuredPropertiesMap.put("bbb","bbb-value");
+        connectionSecuredPropertiesMap.put("ccc","ccc-value");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES,connectionSecuredPropertiesMap);
+
+
+        OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = getOmrsDatabasePollingRepositoryEventMapper(configProperties);
+        MockMetaStoreClient mockMetaStoreClient = new MockMetaStoreClient();
+        omrsDatabasePollingRepositoryEventMapper.setTesting();
+
+        Table t = new Table();
+        t.setCatName("aaa");
+        t.setDbName("bbb");
+        t.setTableName("ccc");
+        StorageDescriptor sd = new StorageDescriptor();
+        List<FieldSchema> cols = new ArrayList<>();
+        FieldSchema fs1 = new FieldSchema();
+        fs1.setName("col1");
+        fs1.setType("array<string>");
+        cols.add(fs1);
+        sd.setCols(cols);
+        FieldSchema fs2 = new FieldSchema();
+        fs2.setName("col2");
+        fs2.setType("string");
+        cols.add(fs2);
+        sd.setCols(cols);
+
+        t.setSd(sd);
+
+        mockMetaStoreClient.addTable(t);
+
+        omrsDatabasePollingRepositoryEventMapper.setClient(mockMetaStoreClient);
+        List<InstanceGraph> graphs = getInstanceGraphs(omrsDatabasePollingRepositoryEventMapper);
+        assertNotNull(graphs);
+        assert(graphs.size() == 2);
+        assert(graphs.get(0).getEntities().size() == 6);
+        assert(graphs.get(0).getRelationships().size() == 5);
         assert(graphs.get(1).getEntities().size() == 3);
         assert(graphs.get(1).getRelationships().size() == 3);
 
@@ -135,7 +242,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         return graphs;
     }
 
-    private static OMRSDatabasePollingRepositoryEventMapper getOmrsDatabasePollingRepositoryEventMapper() throws ConnectionCheckedException, ConnectorCheckedException {
+    private static OMRSDatabasePollingRepositoryEventMapper getOmrsDatabasePollingRepositoryEventMapper(Map<String , Object> configProperties) throws ConnectionCheckedException, ConnectorCheckedException {
         ConnectorBroker cb = new ConnectorBroker();
 
         ConnectorType testConnType = new ConnectorType();
@@ -145,21 +252,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         testConnType.setConnectorProviderClassName(HMSOMRSRepositoryEventMapperProvider.class.getName());
 
         Connection testConnection = new Connection();
-        Map<String , Object> configProperties = configProperties = new HashMap<>();
-        configProperties.put(  "DatabaseName", "default");
-        configProperties.put(  "CatalogName", "spark");
-        //  configProperties.put(   "endpointAddress", "jdbc:test.url");
-        configProperties.put("qualifiedNamePrefix", "data-engine::");
-        configProperties.put( "useSSL", true);
-        configProperties.put( "cacheIntoCachingRepository", true);
-        configProperties.put( "sendPollEvents", true);
-        configProperties.put("MetadataStoreUserId", "testUser");
-        configProperties.put("MetadataStorePassword", "testPW");
-        Map<String, String> connectionSecuredPropertiesMap = new HashMap<>();
-        connectionSecuredPropertiesMap.put("aaa","aaa-value");
-        connectionSecuredPropertiesMap.put("bbb","bbb-value");
-        connectionSecuredPropertiesMap.put("ccc","ccc-value");
-        configProperties.put("connectionSecuredProperties",connectionSecuredPropertiesMap);
+
 
         testConnection.setQualifiedName("Test.Connection");
         testConnection.setDisplayName("Test");

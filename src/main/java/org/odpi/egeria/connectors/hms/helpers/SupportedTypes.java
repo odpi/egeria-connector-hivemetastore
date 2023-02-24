@@ -11,7 +11,8 @@ public class SupportedTypes {
     // this should be a natural to the technology separator character to be used to separate elements in a name.
     public static final String SEPARATOR_CHAR = ".";
 
-    public static final String SCHEMA_TOKEN_NAME = "schema-type";
+    public static final String DEFAULT_DEPLOYED_SCHEMA_TOKEN_NAME = "default-deployed-schema";
+    public static final String DEFAULT_RELATIONAL_DB_SCHEMA_TYPE = "default-relational-DB-Schema-Type";
 
 
     public static final String CONNECTION = "Connection";
@@ -23,6 +24,8 @@ public class SupportedTypes {
     public static final String DATABASE = "Database";
 
     public static final String RELATIONAL_DB_SCHEMA_TYPE = "RelationalDBSchemaType";
+
+    public static final String DEPLOYED_DATABASE_SCHEMA = "DeployedDatabaseSchema";
     // relationship
     public static final String DATA_CONTENT_FOR_DATASET = "DataContentForDataSet";
     // relationship
@@ -61,6 +64,7 @@ public class SupportedTypes {
             RELATIONAL_TABLE_TYPE,
             RELATIONAL_COLUMN_TYPE,
             DATABASE,
+            DEPLOYED_DATABASE_SCHEMA,
             RELATIONAL_DB_SCHEMA_TYPE,
             TABLE,
             COLUMN,
