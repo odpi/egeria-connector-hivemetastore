@@ -412,7 +412,7 @@ abstract public class OMRSEventProducer
 
         if (includeDeployedSchema) {
             // asset => deployed schema
-            aboveTableRelationshipList.add(mapperHelper.createReferenceRelationship(SupportedTypes.ASSET_SCHEMA_TYPE,
+            aboveTableRelationshipList.add(mapperHelper.createReferenceRelationship(SupportedTypes.DATA_CONTENT_FOR_DATASET,
                     databaseGUID,
                     SupportedTypes.DATABASE,
                     deployedDatabaseSchemaEntityGuid,
