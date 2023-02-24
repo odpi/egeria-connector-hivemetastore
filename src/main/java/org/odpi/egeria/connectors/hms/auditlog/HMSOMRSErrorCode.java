@@ -21,7 +21,6 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
             "Connector is unable to be used. as there is no content to sync",
             "ensure that the HMS you are working with supports getCatalogs API. Alternatively specify catalogName in the configuration with the catalog you require. "),
 
-
     TYPE_ERROR_EXCEPTION(400, "OMRS-HMS-REPOSITORY-400-004 ",
                          "Type error exception",
                          "Connector is unable to be used",
@@ -46,6 +45,10 @@ public enum HMSOMRSErrorCode implements ExceptionMessageSet {
             "The system will shutdown the server",
             "Remove or correct the connectionSecuredProperties. It needs to be a map of Strings."),
 
+    FAILED_TO_GET_COLUMNS_FOR_EXTERNAL_TABLE(400, "OMRS-HMS-REPOSITORY-400-009 ",
+            "The Hive metastore connector failed accessing the HMS table parameters for external table {0}",
+            "Connector is unable to be used",
+            "Investigate the external table."),
     NEED_NAMED_CATALOG_IN_CONFIG(400, "OMRS-HMS-REPOSITORY-400-009 ",
             "The connector configuration incorrectly contains useSSL=true and a specified database name, but no catalog name.",
             "The system will shutdown the server",

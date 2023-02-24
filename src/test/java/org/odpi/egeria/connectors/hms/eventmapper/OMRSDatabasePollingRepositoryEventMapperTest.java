@@ -125,10 +125,36 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         fs2.setType("string");
         cols.add(fs2);
         sd.setCols(cols);
+        t.setTableType("VIRTUAL_VIEW");
 
         t.setSd(sd);
-
+        t.setTableType("VIRTUAL_VIEW");
         mockMetaStoreClient.addTable(t);
+//
+//        Map<String, String> parametersMap2 = new HashMap<>();
+//
+//        Table t2 = new Table();
+//        t2.setCatName("aaa");
+//        t2.setDbName("bbb");
+//        t2.setTableName("ddd");
+//
+//        FieldSchema fs3 = new FieldSchema();
+//        fs3.setName("col3");
+//        fs3.setType("array<string>");
+//        cols.add(fs3);
+//
+//        FieldSchema fs4 = new FieldSchema();
+//        fs4.setName("col4");
+//        fs4.setType("string");
+//
+//
+//
+//
+//
+//        t.setParameters(parametersMap2);
+//
+//        t.setTableType("EXTERNAL_TABLE");
+//        mockMetaStoreClient.addTable(t2);
 
         omrsDatabasePollingRepositoryEventMapper.setClient(mockMetaStoreClient);
         List<InstanceGraph> graphs = getInstanceGraphs(omrsDatabasePollingRepositoryEventMapper);

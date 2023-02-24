@@ -237,8 +237,9 @@ abstract public class OMRSEventProducer
      * @param qualifiedName  used to construct qualified names
      * @param tableName name of the table to retrieve
      * @return a Connector table
+     * @throws ConnectorCheckedException connector exception
      */
-    protected abstract ConnectorTable getTableFrom3rdParty(String catName, String dbName, String qualifiedName, String tableName);
+    protected abstract ConnectorTable getTableFrom3rdParty(String catName, String dbName, String qualifiedName, String tableName) throws ConnectorCheckedException;
 
     /**
      * Get the latest table content , construct Egeria events from them and send the events

@@ -28,6 +28,7 @@ import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollec
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryeventmapper.OMRSRepositoryEventProcessor;
 import org.odpi.openmetadata.repositoryservices.ffdc.exception.RepositoryErrorException;
 
+import java.io.IOException;
 import java.util.*;
 
 
@@ -45,6 +46,8 @@ import java.util.*;
 public class HMSOMRSEventProducer extends OMRSEventProducer
 {
 
+    public static final String SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS = "spark.sql.sources.schema.numParts";
+    public static final String SPARK_SQL_SOURCES_SCHEMA_PART = "spark.sql.sources.schema.part.";
     private IMetaStoreClient client = null;
 
 
@@ -146,7 +149,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                     client = new HiveMetaStoreClient(conf, null, false);
                 }
             } catch (MetaException e) {
-                //TODO
                 ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
             }
             metadataCollection = this.repositoryConnector.getMetadataCollection();
@@ -201,7 +203,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         }
         return dbNames;
     }
-    protected ConnectorTable getTableFrom3rdParty(String catName, String dbName, String qualifiedName, String tableName) {
+    protected ConnectorTable getTableFrom3rdParty(String catName, String dbName, String qualifiedName, String tableName) throws ConnectorCheckedException {
         String  methodName = "getTableFrom3rdParty";
         ConnectorTable connectorTable = null;
 
@@ -236,11 +238,11 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
     }
 
     @SuppressWarnings("JavaUtilDate")
-    private ConnectorTable getTableFromHMSTable(String qualifiedName, Table hmsTable) {
+    private ConnectorTable getTableFromHMSTable(String qualifiedName, Table hmsTable) throws ConnectorCheckedException {
         var connectorTable = new ConnectorTable();
-        String name = hmsTable.getTableName();
+        String tableName = hmsTable.getTableName();
         String tableType = hmsTable.getTableType();
-        String tableCanonicalName = qualifiedName + SupportedTypes.SEPARATOR_CHAR + name;
+        String tableCanonicalName = qualifiedName + SupportedTypes.SEPARATOR_CHAR + tableName;
         String typeName = SupportedTypes.TABLE;
         int createTime = hmsTable.getCreateTime();
         //                            String owner = hmsTable.getOwner();
@@ -248,62 +250,68 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         //                               TODO Can we store this on the hmsTable ?
         //                            }
 
-        connectorTable.setName(name);
+        connectorTable.setName(tableName);
         connectorTable.setCreateTime(new Date(createTime));
         connectorTable.setQualifiedName(tableCanonicalName);
         connectorTable.setType(tableType);
         connectorTable.setType(typeName);
 
-        if (tableType.equals("EXTERNAL_TABLE")) {
+        if (tableType != null && tableType.equals("EXTERNAL_TABLE")) {
             Map<String, String> parameters = hmsTable.getParameters();
-            String  numberOfSchemaPartsString = parameters.get("spark.sql.sources.schema.numParts");
+            String  numberOfSchemaPartsString = parameters.get(SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS);
             if (numberOfSchemaPartsString != null) {
                 Integer numberOfSchemaParts = Integer.valueOf(numberOfSchemaPartsString);
+                String schemaAsJSON = "";
+                //stitch together the parts
                 for (int i=0; i< numberOfSchemaParts; i++) {
-                    String schemaAsJSON = parameters.get("spark.sql.sources.schema." + i);
-                    ObjectMapper objectMapper = new ObjectMapper();
+                    schemaAsJSON = schemaAsJSON + parameters.get(SPARK_SQL_SOURCES_SCHEMA_PART + i);
+                }
+                ObjectMapper objectMapper = new ObjectMapper();
 
-                    try {
-                        JsonNode topJsonNode = objectMapper.readTree(schemaAsJSON);
-                        Iterator<String> iterator = topJsonNode.fieldNames();
-                        while (iterator.hasNext()) {
-                            String field = iterator.next();
-                            if (field.equals("fields")) {
-                                JsonNode fieldsJsonNode = topJsonNode.get("fields");
-                                if (fieldsJsonNode.isArray()) {
-                                    ArrayNode fieldsArrayNode = (ArrayNode) fieldsJsonNode;
-                                    for(int j = 0; j <fieldsArrayNode.size(); j++) {
-                                        JsonNode columnJsonNode = fieldsArrayNode.get(i);
-                                        Iterator<Map.Entry<String, JsonNode>> columnDetails = columnJsonNode.fields();
-                                        String columnName = null;
-                                        String dataType = null;
-                                        while(columnDetails.hasNext()) {
-                                            Map.Entry<String, JsonNode> columnDetail = columnDetails.next();
-                                            String columnDetailName  = columnDetail.getKey();
-                                            String columnDetailValue = columnDetail.getValue().asText();
-                                            if (columnDetailName.equals("name")) {
-                                                columnName = columnDetailValue;
-                                            }
-                                            if (columnDetailName.equals("type")) {
-                                                dataType = columnDetailValue;
-                                            }
+                try {
+//                    objectMapper.readValue(schemaAsJSON,.class);
+
+
+                    JsonNode topJsonNode = objectMapper.readTree(schemaAsJSON);
+                    Iterator<String> iterator = topJsonNode.fieldNames();
+                    while (iterator.hasNext()) {
+                        String field = iterator.next();
+                        if (field.equals("fields")) {
+                            JsonNode fieldsJsonNode = topJsonNode.get("fields");
+                            if (fieldsJsonNode.isArray()) {
+                                ArrayNode fieldsArrayNode = (ArrayNode) fieldsJsonNode;
+                                for (int j = 0; j < fieldsArrayNode.size(); j++) {
+                                    JsonNode columnJsonNode = fieldsArrayNode.get(j);
+                                    Iterator<Map.Entry<String, JsonNode>> columnDetails = columnJsonNode.fields();
+                                    String columnName = null;
+                                    String dataType = null;
+                                    while (columnDetails.hasNext()) {
+                                        Map.Entry<String, JsonNode> columnDetail = columnDetails.next();
+                                        String columnDetailName = columnDetail.getKey();
+                                        String columnDetailValue = columnDetail.getValue().asText();
+                                        if (columnDetailName.equals("name")) {
+                                            columnName = columnDetailValue;
                                         }
-                                        if (columnName !=null && dataType !=null) {
-                                            var column = new ConnectorColumn();
-                                            column.setName(columnName);
-                                            column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
-                                            column.setType(dataType);
-                                            connectorTable.addColumn(column);
+                                        if (columnDetailName.equals("type")) {
+                                            dataType = columnDetailValue;
                                         }
                                     }
-
+                                    if (columnName != null && dataType != null) {
+                                        var column = new ConnectorColumn();
+                                        column.setName(columnName);
+                                        column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
+                                        column.setType(dataType);
+                                        connectorTable.addColumn(column);
+                                    }
                                 }
+
                             }
                         }
-
-                    } catch (JsonProcessingException e) {
-                        throw new RuntimeException(e);
                     }
+//                    } catch (JsonProcessingException e) {
+//                        throw new RuntimeException(e); //TODO handle properly
+                }  catch (IOException e) {
+                    ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_GET_COLUMNS_FOR_EXTERNAL_TABLE, tableName, null);
                 }
             }
 
