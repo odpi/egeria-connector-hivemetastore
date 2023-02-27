@@ -48,6 +48,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 
     public static final String SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS = "spark.sql.sources.schema.numParts";
     public static final String SPARK_SQL_SOURCES_SCHEMA_PART = "spark.sql.sources.schema.part.";
+    public static final String SPARK_SQL_SOURCES_SCHEMA = "spark.sql.sources.schema";
     private IMetaStoreClient client = null;
 
 
@@ -237,6 +238,22 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         return connectorTable;
     }
 
+    /**
+     * This method takes in an HMS table and converts it to a ConnectorTable, which is a technology independent version of the table.
+     *
+     * The column information is embedded in the HMS table. There are 3 places that we look for columns
+     * For an external table we look for spark content:
+     * - we look for to see if there are schema parts in the table parameters, if there are then we stitch together the schema parts;
+     *   and map this json to ConnectorColumns in the ConnectorTable. This is Spark 2 format
+     * - if there is a connector schema then map this json to ConnectorColumns in the ConnectorTable. This is a Spark 3 format
+     * If we have not found any columns, in all other cases:
+     * - look for the columns in the storage descriptor
+     *
+     * @param qualifiedName qualified name to use to construct ConnectorTable and Connectorcolumns
+     * @param hmsTable hmsTable HMS table to extract information from
+     * @return Connector table connector table
+     * @throws ConnectorCheckedException connector checked exception
+     */
     @SuppressWarnings("JavaUtilDate")
     private ConnectorTable getTableFromHMSTable(String qualifiedName, Table hmsTable) throws ConnectorCheckedException {
         var connectorTable = new ConnectorTable();
@@ -258,20 +275,23 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 
         if (tableType != null && tableType.equals("EXTERNAL_TABLE")) {
             Map<String, String> parameters = hmsTable.getParameters();
-            String  numberOfSchemaPartsString = parameters.get(SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS);
-            if (numberOfSchemaPartsString != null) {
+            String numberOfSchemaPartsString = parameters.get(SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS);
+            String schemaAsJSON = "";
+            if (numberOfSchemaPartsString == null) {
+                schemaAsJSON = parameters.get(SPARK_SQL_SOURCES_SCHEMA);
+            } else {
                 Integer numberOfSchemaParts = Integer.valueOf(numberOfSchemaPartsString);
-                String schemaAsJSON = "";
                 //stitch together the parts
-                for (int i=0; i< numberOfSchemaParts; i++) {
+                for (int i = 0; i < numberOfSchemaParts; i++) {
                     schemaAsJSON = schemaAsJSON + parameters.get(SPARK_SQL_SOURCES_SCHEMA_PART + i);
                 }
+            }
+            if (!schemaAsJSON.equals("")) {
+                // Note that I attempted to use the SparkSchemaBean in the test folder to deserialise the json, but it errored.
+                // So I am walking the json nodes to extract the information
                 ObjectMapper objectMapper = new ObjectMapper();
 
                 try {
-//                    objectMapper.readValue(schemaAsJSON,.class);
-
-
                     JsonNode topJsonNode = objectMapper.readTree(schemaAsJSON);
                     Iterator<String> iterator = topJsonNode.fieldNames();
                     while (iterator.hasNext()) {
@@ -308,14 +328,13 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                             }
                         }
                     }
-//                    } catch (JsonProcessingException e) {
-//                        throw new RuntimeException(e); //TODO handle properly
-                }  catch (IOException e) {
+                } catch (IOException e) {
                     ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_GET_COLUMNS_FOR_EXTERNAL_TABLE, tableName, null);
                 }
             }
-
-        } else {
+        }
+        // if we have not found any Spark columns for external tables - in all other cases we look for columns in the storage descriptor
+        if (connectorTable.getColumns() == null) {
             Iterator<FieldSchema> colsIterator = hmsTable.getSd().getColsIterator();
             while (colsIterator.hasNext()) {
                 FieldSchema fieldSchema = colsIterator.next();
@@ -329,8 +348,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                 connectorTable.addColumn(column);
             }
         }
-
-
         return connectorTable;
     }
 }

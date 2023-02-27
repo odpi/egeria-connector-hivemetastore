@@ -16,12 +16,9 @@ import org.odpi.openmetadata.frameworks.connectors.ConnectorBroker;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectionCheckedException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedException;
 import org.odpi.openmetadata.frameworks.connectors.properties.ConnectionProperties;
-import org.odpi.openmetadata.frameworks.connectors.properties.EndpointProperties;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.Endpoint;
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.Connection;
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.ConnectorType;
-import org.odpi.openmetadata.adapters.repositoryservices.caching.repositoryconnector.CachingOMRSRepositoryProxyConnectorProvider;
-import org.odpi.openmetadata.adapters.repositoryservices.caching.repositoryconnector.CachingOMRSRepositoryProxyConnector;
+import org.odpi.openmetadata.frameworks.connectors.properties.beans.Endpoint;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.OMRSMetadataCollection;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.EntityDetail;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.InstanceGraph;
@@ -29,16 +26,11 @@ import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollec
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryconnector.OMRSRepositoryHelper;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.repositoryconnector.OMRSRepositoryValidator;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 //import java.io.IOException;
 //import java.nio.file.Files;
 //import java.nio.file.Path;
@@ -130,40 +122,107 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         t.setSd(sd);
         t.setTableType("VIRTUAL_VIEW");
         mockMetaStoreClient.addTable(t);
-//
-//        Map<String, String> parametersMap2 = new HashMap<>();
-//
-//        Table t2 = new Table();
-//        t2.setCatName("aaa");
-//        t2.setDbName("bbb");
-//        t2.setTableName("ddd");
-//
-//        FieldSchema fs3 = new FieldSchema();
-//        fs3.setName("col3");
-//        fs3.setType("array<string>");
-//        cols.add(fs3);
-//
-//        FieldSchema fs4 = new FieldSchema();
-//        fs4.setName("col4");
-//        fs4.setType("string");
-//
-//
-//
-//
-//
-//        t.setParameters(parametersMap2);
-//
-//        t.setTableType("EXTERNAL_TABLE");
-//        mockMetaStoreClient.addTable(t2);
+
+        Map<String, String> parametersMap2 = new HashMap<>();
+
+        Table t2 = new Table();
+        t2.setCatName("aaa");
+        t2.setDbName("bbb");
+        t2.setTableName("ddd");
+
+        SparkSchemaBean sparkSchemaBean2 = new SparkSchemaBean();
+
+        FieldSchema f1 =new FieldSchema();
+        f1.setName("f1");
+        f1.setType("string");
+        FieldSchema f2 =new FieldSchema();
+        f2.setName("f2");
+        f2.setType("string");
+        FieldSchema f3 =new FieldSchema();
+        f3.setName("f3");
+        f3.setType("string");
+
+        sparkSchemaBean2.addField(f1);
+        sparkSchemaBean2.addField(f2);
+        sparkSchemaBean2.addField(f3);
+        ObjectMapper om = new ObjectMapper();
+        String sparkSchemaBeanStr = om.writeValueAsString(sparkSchemaBean2);
+        parametersMap2.put(HMSOMRSEventProducer.SPARK_SQL_SOURCES_SCHEMA, sparkSchemaBeanStr);
+
+        t2.setParameters(parametersMap2);
+
+        t2.setTableType("EXTERNAL_TABLE");
+        mockMetaStoreClient.addTable(t2);
+
+
+        Map<String, String> parametersMap3 = new HashMap<>();
+
+        Table t3 = new Table();
+        t3.setCatName("aaa");
+        t3.setDbName("bbb");
+        t3.setTableName("eee");
+
+        SparkSchemaBean sparkSchemaBean3 = new SparkSchemaBean();
+
+        FieldSchema f4 =new FieldSchema();
+        f4.setName("f4");
+        f4.setType("string");
+        FieldSchema f5 =new FieldSchema();
+        f5.setName("f5");
+        f5.setType("string");
+        FieldSchema f6 =new FieldSchema();
+        f6.setName("f6");
+        f6.setType("string");
+
+        sparkSchemaBean3.addField(f4);
+        sparkSchemaBean3.addField(f5);
+        sparkSchemaBean3.addField(f6);
+
+        String sparkSchemaBeanStr3 = om.writeValueAsString(sparkSchemaBean3);
+
+        int count =0;
+
+        int endIndex = 3;
+
+        String checker = "";
+
+        while (sparkSchemaBeanStr3.length() > 0) {
+            // split up every 3 characters
+            if (sparkSchemaBeanStr3.length() < 3) {
+                endIndex =sparkSchemaBeanStr3.length();
+            }
+
+            String part = sparkSchemaBeanStr3.substring(0, endIndex);
+            parametersMap2.put(HMSOMRSEventProducer.SPARK_SQL_SOURCES_SCHEMA_PART+count, part);
+
+            sparkSchemaBeanStr3 = sparkSchemaBeanStr3.substring(endIndex);
+
+            checker= checker+part;
+            count++;
+        }
+        parametersMap2.put(HMSOMRSEventProducer.SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS, String.valueOf(count));
+
+        // check all the parts knit back to the original string
+        assertEquals(checker, om.writeValueAsString(sparkSchemaBean3));
+
+        t3.setParameters(parametersMap2);
+
+        t3.setTableType("EXTERNAL_TABLE");
+        mockMetaStoreClient.addTable(t3);
 
         omrsDatabasePollingRepositoryEventMapper.setClient(mockMetaStoreClient);
         List<InstanceGraph> graphs = getInstanceGraphs(omrsDatabasePollingRepositoryEventMapper);
         assertNotNull(graphs);
-        assert(graphs.size() == 2);
+
+        assert(graphs.size() == 4);
         assert(graphs.get(0).getEntities().size() == 5);
         assert(graphs.get(0).getRelationships().size() == 4);
         assert(graphs.get(1).getEntities().size() == 3);
         assert(graphs.get(1).getRelationships().size() == 3);
+        assert(graphs.get(2).getEntities().size() == 4);
+        assert(graphs.get(2).getRelationships().size() == 4);
+        assert(graphs.get(3).getEntities().size() == 4);
+        assert(graphs.get(3).getRelationships().size() == 4);
 
         checkQualifiedNamesAreUnique(graphs);
 
@@ -317,8 +376,6 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         Connector newConnector = cb.getConnector(testConnectionProperties);
         assertNotNull(newConnector);
         CachingOMRSRepositoryProxyConnector cachingOMRSRepositoryProxyConnector = (CachingOMRSRepositoryProxyConnector)newConnector;
-//        OMRSRepositoryHelper repositoryHelper = new MockRepositoryHelper();
-//        cachingOMRSRepositoryProxyConnector.setRepositoryHelper(repositoryHelper);
 
         Field f1 = cachingOMRSRepositoryProxyConnector.getClass().getSuperclass().getDeclaredField("metadataCollection");
         f1.setAccessible(true);
@@ -337,13 +394,9 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         f4.setAccessible(true);
         f4.set(cachingOMRSRepositoryProxyConnector, true);
 
-
         return cachingOMRSRepositoryProxyConnector;
 
     }
-
-
-
 
 //
 //    @Test
