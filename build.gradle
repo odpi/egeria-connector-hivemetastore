@@ -23,7 +23,7 @@ plugins {
     id 'org.gradlex.java-ecosystem-capabilities' version "1.1"
 }
 
-// Only do signing when running under github actinos
+// Only do signing when running under github actions
 if (System.getenv("CI")) {
     apply plugin: 'signing'
 }
@@ -61,7 +61,7 @@ version = '1.0-SNAPSHOT'
 ext.name = 'Egeria Hive Metastore Connector'
 description = 'Egeria Connector for Hive Metastore'
 
-// Versions - most should be picked up from the import of the egeria base POM
+// Versions - most should be picked up from the import of the Egeria base POM
 ext {
     egeriaversion = '3.15'
     cachingconnectorversion = '1.0-SNAPSHOT'
@@ -75,7 +75,7 @@ ext {
 
 // Dependencies
 dependencies {
-    // authoritative versions for dependencyManagement provided by egeria core - this uses the dependencyManagement
+    // authoritative versions for dependencyManagement provided by Egeria core - this uses the dependencyManagement
     // in the main Egeria pom to define the versions of the dependencies.
     implementation platform("org.odpi.egeria:egeria:${egeriaversion}")
 
@@ -98,7 +98,7 @@ dependencies {
     implementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
     implementation 'org.apache.thrift:libthrift:${thriftVersion}'
 
-    // Use standard client library version by default, replace by alternate library for IBM config
+    // Use standard client library version by default, replace with an alternate library for IBM config
     // and resolve some differences in dependencies
     if (project.hasProperty("ibmhive")) {
         api("com.ibm.hive:hive-metastore-standalone-client:${ibmHiveVersion}")
@@ -185,13 +185,13 @@ shadowJar {
     zip64 true
     // TODO: May not need to exclude, since we shade the dependencies
     exclude("com/google/protobuf/**")
-    // strip what we don't need, but keep egeria classes (ie connector dependency - providers)
-    // If enabled will cause connector to file when loading hadoop-commons. Disabling, as what else is dynamically loaded?
+    // strip what we don't need, but keep egeria classes (i.e. connector dependency - providers)
+    // If enabled will cause connector to fail when loading hadoop-commons. Disabling, as what else is dynamically loaded?
     //minimize {
     //    exclude(dependency('org.odpi.egeria:.*:.*'))
     //}
-    // Hive libraries contain a large dependency chain. We want to shade most, but not all
-    // no wildcards, so have to list each one (or recode as expression). Also much quicker explicitly
+    // Hive libraries contain a large dependency chain. We want to shade most, but not all,
+    // no wildcards, so have to list each one (or recode as expression). Also much quicker explicitly declaring for
     // hadoop, kerby, yetus, jute, zookeeper, commons, curator, avro, calcite, thrift
     relocate("org.apache", "org.odpi.openmetadata.shaded.apache")
     // guava, common, re2j, gson
