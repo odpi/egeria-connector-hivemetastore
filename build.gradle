@@ -69,7 +69,8 @@ ext {
     ibmHiveVersion = '3.1.2'
     hadoopVersion = '3.3.4'
     hiveStorageVersion = '2.8.1'
-    thriftVersion = '0.17.0'
+    thriftVersion = '0.18.0'
+>>>>>>> 53e6edc (Bump org.apache.thrift:libthrift from 0.17.0 to 0.18.0)
 }
 
 
