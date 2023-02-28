@@ -237,8 +237,9 @@ abstract public class OMRSEventProducer
      * @param qualifiedName  used to construct qualified names
      * @param tableName name of the table to retrieve
      * @return a Connector table
+     * @throws ConnectorCheckedException connector exception
      */
-    protected abstract ConnectorTable getTableFrom3rdParty(String catName, String dbName, String qualifiedName, String tableName);
+    protected abstract ConnectorTable getTableFrom3rdParty(String catName, String dbName, String qualifiedName, String tableName) throws ConnectorCheckedException;
 
     /**
      * Get the latest table content , construct Egeria events from them and send the events
@@ -513,22 +514,22 @@ abstract public class OMRSEventProducer
         }
     }
 
-
-
-    /**
-     * convert the connector tables to entities and relationships
-     *
-     * @param connectorTables connector tables
-     * @throws ConnectorCheckedException connector exception
-     * @throws TypeErrorException        type exception
-     */
-    void convertToConnectorTablesToEntitiesAndRelationships(List<ConnectorTable> connectorTables) throws ConnectorCheckedException, TypeErrorException {
-        String methodName = "convertToConnectorTablesToEntitiesAndRelationships";
-
-        for (ConnectorTable connectorTable : connectorTables) {
-            convertToConnectorTableToEntitiesAndRelationships(methodName, connectorTable);
-        }
-    }
+//
+//
+//    /**
+//     * convert the connector tables to entities and relationships
+//     *
+//     * @param connectorTables connector tables
+//     * @throws ConnectorCheckedException connector exception
+//     * @throws TypeErrorException        type exception
+//     */
+//    void convertToConnectorTablesToEntitiesAndRelationships(List<ConnectorTable> connectorTables) throws ConnectorCheckedException, TypeErrorException {
+//        String methodName = "convertToConnectorTablesToEntitiesAndRelationships";
+//
+//        for (ConnectorTable connectorTable : connectorTables) {
+//            convertToConnectorTableToEntitiesAndRelationships(methodName, connectorTable);
+//        }
+//    }
 
     synchronized private void convertToConnectorTableToEntitiesAndRelationships(String methodName, ConnectorTable connectorTable) throws ConnectorCheckedException, TypeErrorException {
         String tableQualifiedName = connectorTable.getQualifiedName();
