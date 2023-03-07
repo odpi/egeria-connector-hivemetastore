@@ -104,7 +104,7 @@ public class MapperHelper {
      * @param originalMethodName callers method name - for diagnostics
      * @param typeName type name of the entity
      * @param name display name of the entity
-     * @param canonicalName unique name
+     * @param qualifiedName unique name
      * @param attributeMap map of attributes
      * @param generateUniqueVersion whether to generate a unique version (only required if we are going to update the entity)
      * @return EntityDetail created entity detail
@@ -113,7 +113,7 @@ public class MapperHelper {
     public EntityDetail getEntityDetailSkeleton(String originalMethodName,
                                                 String typeName,
                                                 String name,
-                                                String canonicalName,
+                                                String qualifiedName,
                                                 Map<String, String> attributeMap,
                                                 boolean generateUniqueVersion
 
@@ -122,9 +122,9 @@ public class MapperHelper {
 
         String guid = null;
         try {
-            guid = Base64.getUrlEncoder().encodeToString(canonicalName.getBytes("UTF-8"));
+            guid = Base64.getUrlEncoder().encodeToString(qualifiedName.getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
-            ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.ENCODING_EXCEPTION, methodName, e, "canonicalName", canonicalName);
+            ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.ENCODING_EXCEPTION, methodName, e, "canonicalName", qualifiedName);
         }
 
 
@@ -136,7 +136,7 @@ public class MapperHelper {
         initialProperties = repositoryHelper.addStringPropertyToInstance(methodName,
                 initialProperties,
                 "qualifiedName",
-                qualifiedNamePrefix + canonicalName,
+                qualifiedNamePrefix + qualifiedName,
                 methodName);
         if (attributeMap != null && !attributeMap.keySet().isEmpty()) {
             addPropertiesToInstanceProperties(initialProperties, attributeMap);
