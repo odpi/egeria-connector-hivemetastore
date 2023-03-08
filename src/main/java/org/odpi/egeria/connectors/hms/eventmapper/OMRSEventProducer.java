@@ -620,12 +620,11 @@ abstract public class OMRSEventProducer
      */
     private void createConnectionOrientatedEntities(String baseCanonicalName, EntityDetail databaseEntity) throws ConnectorCheckedException {
         String methodName = "createConnectionOrientatedEntities";
-        String name = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "connection";
-        String canonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + "connection";
+        String canonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.CONNECTION_VALUE;
 
         EntityDetail connectionEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                 SupportedTypes.CONNECTION,
-                name,
+                SupportedTypes.CONNECTION_VALUE,
                 canonicalName,
                 null,
                 false);
@@ -651,24 +650,22 @@ abstract public class OMRSEventProducer
         }
         saveEntityReferenceCopy(connectionEntity);
 
-        name = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.CONNECTOR_TYPE;
-        canonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.CONNECTOR_TYPE;
+
+        canonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.CONNECTOR_TYPE_VALUE;
 
         EntityDetail connectionTypeEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                 SupportedTypes.CONNECTOR_TYPE,
-                name,
+                SupportedTypes.CONNECTOR_TYPE_VALUE,
                 canonicalName,
                 null,
                 false);
         saveEntityReferenceCopy(connectionTypeEntity);
 
-
-        name = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.ENDPOINT;
-        canonicalName = name;
+        canonicalName = baseCanonicalName + SupportedTypes.SEPARATOR_CHAR + SupportedTypes.ENDPOINT_VALUE;
 
         EntityDetail endpointEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                 SupportedTypes.ENDPOINT,
-                name,
+                SupportedTypes.ENDPOINT_VALUE,
                 canonicalName,
                 null,
                 false);

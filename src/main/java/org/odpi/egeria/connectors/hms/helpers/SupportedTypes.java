@@ -18,6 +18,16 @@ public class SupportedTypes {
     public static final String CONNECTION = "Connection";
     public static final String CONNECTOR_TYPE = "ConnectorType";
     public static final String ENDPOINT = "Endpoint";
+
+    public static final String SCHEMA_TYPE_NAME = "schemaTypeName"; // property name in the type embedded classification for entity type
+    public static final String DATA_TYPE = "dataType" ; // property name in the type embedded classification for data type
+    // hard coded values
+    public static final String CONNECTION_VALUE = "connection";
+
+    public static final String CONNECTOR_TYPE_VALUE = "connectorType";
+
+    public static final String ENDPOINT_VALUE = "Endpoint";
+
     public static final String CONNECTION_ENDPOINT = "ConnectionEndpoint";
     public static final String CONNECTION_CONNECTOR_TYPE = "ConnectionConnectorType";
     public static final String CONNECTION_TO_ASSET = "ConnectionToAsset";
@@ -81,4 +91,6 @@ public class SupportedTypes {
             TYPE_EMBEDDED_ATTRIBUTE,
             CALCULATED_VALUE
     });
+
+
 }

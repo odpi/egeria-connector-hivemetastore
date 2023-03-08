@@ -104,7 +104,7 @@ public class MapperHelper {
      * @param originalMethodName callers method name - for diagnostics
      * @param typeName type name of the entity
      * @param name display name of the entity
-     * @param qualifiedName unique name
+     * @param qualifiedNameSuffix unique name
      * @param attributeMap map of attributes
      * @param generateUniqueVersion whether to generate a unique version (only required if we are going to update the entity)
      * @return EntityDetail created entity detail
@@ -113,13 +113,13 @@ public class MapperHelper {
     public EntityDetail getEntityDetailSkeleton(String originalMethodName,
                                                 String typeName,
                                                 String name,
-                                                String qualifiedName,
+                                                String qualifiedNameSuffix,
                                                 Map<String, String> attributeMap,
                                                 boolean generateUniqueVersion
 
     ) throws ConnectorCheckedException {
         String methodName = "getEntityDetail";
-
+        String qualifiedName = qualifiedNamePrefix + qualifiedNameSuffix;
         String guid = null;
         try {
             guid = Base64.getUrlEncoder().encodeToString(qualifiedName.getBytes("UTF-8"));
@@ -136,7 +136,7 @@ public class MapperHelper {
         initialProperties = repositoryHelper.addStringPropertyToInstance(methodName,
                 initialProperties,
                 "qualifiedName",
-                qualifiedNamePrefix + qualifiedName,
+                qualifiedName,
                 methodName);
         if (attributeMap != null && !attributeMap.keySet().isEmpty()) {
             addPropertiesToInstanceProperties(initialProperties, attributeMap);
