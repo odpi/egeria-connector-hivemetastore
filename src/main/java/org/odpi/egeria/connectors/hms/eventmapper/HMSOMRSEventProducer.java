@@ -260,7 +260,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         String tableName = hmsTable.getTableName();
         String tableType = hmsTable.getTableType();
         String tableCanonicalName = qualifiedName + SupportedTypes.SEPARATOR_CHAR + tableName;
-        String typeName = SupportedTypes.TABLE;
         int createTime = hmsTable.getCreateTime();
         //                            String owner = hmsTable.getOwner();
         //                            if (owner != null) {
@@ -271,7 +270,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         connectorTable.setCreateTime(new Date(createTime));
         connectorTable.setQualifiedName(tableCanonicalName);
         connectorTable.setType(tableType);
-        connectorTable.setType(typeName);
 
         if (tableType != null && tableType.equals("EXTERNAL_TABLE")) {
             Map<String, String> parameters = hmsTable.getParameters();
