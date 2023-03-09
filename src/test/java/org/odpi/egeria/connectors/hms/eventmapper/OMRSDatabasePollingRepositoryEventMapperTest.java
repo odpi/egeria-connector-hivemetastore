@@ -35,63 +35,52 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-
-public class OMRSDatabasePollingRepositoryEventMapperTest
-{
+public class OMRSDatabasePollingRepositoryEventMapperTest {
     public static final String DB_NAME_VALUE = "default";
     public static final String CATALOG_NAME_VALUE = "spark";
-
     public static final String QUALIFIED_NAME_PREFIX = "data-engine::";
 
     public static final String ENDPOINT_NETWORK_ADDRESS = "jdbc://testing.com";
-    public static final String DATABASE_QUALIFIED_NAME = QUALIFIED_NAME_PREFIX +  CATALOG_NAME_VALUE + "." + DB_NAME_VALUE;
-    public static final String DEFAULT_RELATIONAL_SCHEMA_TYPE_QUALIFIED_NAME = DATABASE_QUALIFIED_NAME + "." + SupportedTypes.DEFAULT_RELATIONAL_DB_SCHEMA_TYPE;
+    public static final String DATABASE_QUALIFIED_NAME = QUALIFIED_NAME_PREFIX + CATALOG_NAME_VALUE + "." + DB_NAME_VALUE;
+
     public static final String TEST_USER = "testUser";
     public static final String TEST_PW = "testPW";
     public static final String SPARK_2_FORMAT_TABLE_1 = "spark2formatTable1";
-
-    public static final String SPARK_2_FORMAT_TABLE_1_QUALIFIED_NAME = DEFAULT_RELATIONAL_SCHEMA_TYPE_QUALIFIED_NAME +"." + SPARK_2_FORMAT_TABLE_1;
-
     public static final String SPARK_3_FORMAT_TABLE_1 = "spark3formatTable1";
-
-    public static final String SPARK_3_FORMAT_TABLE_1_QUALIFIED_NAME = DEFAULT_RELATIONAL_SCHEMA_TYPE_QUALIFIED_NAME +"." + SPARK_3_FORMAT_TABLE_1;
 
     public static final String VIEW_1 = "view1";
 
-    public static final String VIEW_1_QUALIFIED_NAME = DEFAULT_RELATIONAL_SCHEMA_TYPE_QUALIFIED_NAME +"." + VIEW_1;
-
     final List<MockColumn> TWO_COLUMNS = Arrays.asList(
-            new MockColumn("col1","array<string>"),
-            new MockColumn("col2","string")
+            new MockColumn("col1", "array<string>"),
+            new MockColumn("col2", "string")
     );
 
-    final Set<String> TWO_COLUMNS_NAMES =TWO_COLUMNS.stream().map(x -> x.getName()).collect(Collectors.toSet());
+    final Set<String> TWO_COLUMNS_NAMES = TWO_COLUMNS.stream().map(x -> x.getName()).collect(Collectors.toSet());
 
     final List<MockColumn> THREE_STRING_COLUMNS = Arrays.asList(
-            new MockColumn("f1","string"),
-            new MockColumn("f2","string"),
-            new MockColumn("f3","string")
+            new MockColumn("f1", "string"),
+            new MockColumn("f2", "string"),
+            new MockColumn("f3", "string")
     );
-    final Set<String> THREE_STRING_COLUMNS_NAMES =THREE_STRING_COLUMNS.stream().map(x -> x.getName()).collect(Collectors.toSet());
-
+    final Set<String> THREE_STRING_COLUMNS_NAMES = THREE_STRING_COLUMNS.stream().map(x -> x.getName()).collect(Collectors.toSet());
 
 
     @Test
     protected void mapperTestNoHMSContent() throws ConnectionCheckedException, IllegalAccessException, ConnectorCheckedException, NoSuchFieldException {
-        Map<String , Object> configProperties = new HashMap<>();
-        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, "default");
-        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, "spark");
+        Map<String, Object> configProperties = new HashMap<>();
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, "default");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, "spark");
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX, "data-engine::");
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER, "testUser");
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_PASSWORD, "testPW");
         Map<String, String> connectionSecuredPropertiesMap = new HashMap<>();
-        connectionSecuredPropertiesMap.put("aaa","aaa-value");
-        connectionSecuredPropertiesMap.put("bbb","bbb-value");
-        connectionSecuredPropertiesMap.put("ccc","ccc-value");
-        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES,connectionSecuredPropertiesMap);
+        connectionSecuredPropertiesMap.put("aaa", "aaa-value");
+        connectionSecuredPropertiesMap.put("bbb", "bbb-value");
+        connectionSecuredPropertiesMap.put("ccc", "ccc-value");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES, connectionSecuredPropertiesMap);
 
         OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = getOmrsDatabasePollingRepositoryEventMapper(configProperties);
 
@@ -99,35 +88,45 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         omrsDatabasePollingRepositoryEventMapper.setClient(new MockMetaStoreClient());
 
         OMRSRepositoryHelper repositoryHelper = new MockRepositoryHelper();
-        OMRSMetadataCollection collection = new MockMetadataCollection(null, "test-repoName",repositoryHelper,null,"test-md-collection-id");
+        OMRSMetadataCollection collection = new MockMetadataCollection(null, "test-repoName", repositoryHelper, null, "test-md-collection-id");
         List<InstanceGraph> graphs = getInstanceGraphs(omrsDatabasePollingRepositoryEventMapper, repositoryHelper, collection);
 
         assertNotNull(graphs);
-        assert(graphs.size() == 1);
-        assert(graphs.get(0).getEntities().size() == 5);
-        assert(graphs.get(0).getRelationships().size() == 4);
+        assert (graphs.size() == 1);
+        assert (graphs.get(0).getEntities().size() == 5);
+        assert (graphs.get(0).getRelationships().size() == 4);
 
         checkQualifiedNamesAreUnique(graphs);
 
     }
+
     @Test
-    protected void mapperTestHMSContent() throws ConnectionCheckedException, IllegalAccessException, ConnectorCheckedException, NoSuchFieldException, IOException, InvalidParameterException, RepositoryErrorException, UserNotAuthorizedException, EntityProxyOnlyException, EntityNotKnownException {
-        Map<String , Object> configProperties = new HashMap<>();
-        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, DB_NAME_VALUE);
-        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, CATALOG_NAME_VALUE);
+    protected void mapperTestHMSContentWithoutDeployedDBSchema() throws InvalidParameterException, ConnectionCheckedException, RepositoryErrorException, UserNotAuthorizedException, EntityProxyOnlyException, IOException, EntityNotKnownException, ConnectorCheckedException, NoSuchFieldException, IllegalAccessException {
+        mapperTestHMSContent(false);
+    }
+
+    @Test
+    protected void mapperTestHMSContentWithDeployedDBSchema() throws InvalidParameterException, ConnectionCheckedException, RepositoryErrorException, UserNotAuthorizedException, EntityProxyOnlyException, IOException, EntityNotKnownException, ConnectorCheckedException, NoSuchFieldException, IllegalAccessException {
+        mapperTestHMSContent(true);
+    }
+
+    protected void mapperTestHMSContent(boolean deployedDBSchema) throws ConnectionCheckedException, IllegalAccessException, ConnectorCheckedException, NoSuchFieldException, IOException, InvalidParameterException, RepositoryErrorException, UserNotAuthorizedException, EntityProxyOnlyException, EntityNotKnownException {
+        Map<String, Object> configProperties = new HashMap<>();
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, DB_NAME_VALUE);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, CATALOG_NAME_VALUE);
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX, QUALIFIED_NAME_PREFIX);
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER, TEST_USER);
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_PASSWORD, TEST_PW);
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.ENDPOINT_ADDRESS, ENDPOINT_NETWORK_ADDRESS);
-
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.INCLUDE_DEPLOYED_SCHEMA, deployedDBSchema);
         Map<String, String> connectionSecuredPropertiesMap = new HashMap<>();
-        connectionSecuredPropertiesMap.put("aaa","aaa-value");
-        connectionSecuredPropertiesMap.put("bbb","bbb-value");
-        connectionSecuredPropertiesMap.put("ccc","ccc-value");
-        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES,connectionSecuredPropertiesMap);
+        connectionSecuredPropertiesMap.put("aaa", "aaa-value");
+        connectionSecuredPropertiesMap.put("bbb", "bbb-value");
+        connectionSecuredPropertiesMap.put("ccc", "ccc-value");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES, connectionSecuredPropertiesMap);
 
 
         OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = getOmrsDatabasePollingRepositoryEventMapper(configProperties);
@@ -136,7 +135,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
         // test view 2 columns
         Table t = createTable(VIEW_1);
-        StorageDescriptor sd =createStorageDescriptorWithColumns(TWO_COLUMNS);
+        StorageDescriptor sd = createStorageDescriptorWithColumns(TWO_COLUMNS);
         t.setSd(sd);
         t.setTableType("VIRTUAL_VIEW");
         mockMetaStoreClient.addTable(t);
@@ -156,21 +155,21 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         Table t3 = createTable(SPARK_2_FORMAT_TABLE_1);
         SparkSchemaBean sparkSchemaBean3 = createSparkSchema(THREE_STRING_COLUMNS);
         String sparkSchemaBeanStr3 = om.writeValueAsString(sparkSchemaBean3);
-        int count =0;
+        int count = 0;
         int endIndex = 3;
         String checker = "";
         while (sparkSchemaBeanStr3.length() > 0) {
             // split up every 3 characters
             if (sparkSchemaBeanStr3.length() < 3) {
-                endIndex =sparkSchemaBeanStr3.length();
+                endIndex = sparkSchemaBeanStr3.length();
             }
 
             String part = sparkSchemaBeanStr3.substring(0, endIndex);
-            parametersMap3.put(HMSOMRSEventProducer.SPARK_SQL_SOURCES_SCHEMA_PART+count, part);
+            parametersMap3.put(HMSOMRSEventProducer.SPARK_SQL_SOURCES_SCHEMA_PART + count, part);
 
             sparkSchemaBeanStr3 = sparkSchemaBeanStr3.substring(endIndex);
 
-            checker= checker+part;
+            checker = checker + part;
             count++;
         }
         parametersMap3.put(HMSOMRSEventProducer.SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS, String.valueOf(count));
@@ -185,18 +184,27 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
         omrsDatabasePollingRepositoryEventMapper.setClient(mockMetaStoreClient);
         OMRSRepositoryHelper repositoryHelper = new MockRepositoryHelper();
-        OMRSMetadataCollection collection = new MockMetadataCollection(null, "test-repoName",repositoryHelper,null,"test-md-collection-id");
+        OMRSMetadataCollection collection = new MockMetadataCollection(null, "test-repoName", repositoryHelper, null, "test-md-collection-id");
         List<InstanceGraph> graphs = getInstanceGraphs(omrsDatabasePollingRepositoryEventMapper, repositoryHelper, collection);
         assertNotNull(graphs);
 
 
-        assert(graphs.size() == 4);
+        assert (graphs.size() == 4);
         // above the tables entities
         List<EntityDetail> entities0 = graphs.get(0).getEntities();
-        assert(entities0.size() == 5);
+        if (deployedDBSchema) {
+            assert (entities0.size() == 6);
+        } else {
+            assert (entities0.size() == 5);
+        }
+        String relationalDBTypeQualifiedName = DATABASE_QUALIFIED_NAME +".";
+        if (deployedDBSchema) {
+            relationalDBTypeQualifiedName = relationalDBTypeQualifiedName + SupportedTypes.DEFAULT_DEPLOYED_SCHEMA_TOKEN_NAME + ".";
+        }
+        relationalDBTypeQualifiedName = relationalDBTypeQualifiedName + SupportedTypes.DEFAULT_RELATIONAL_DB_SCHEMA_TYPE;
         // check that the entities are as expected
         int foundExpected = 0;
-        for (EntityDetail entity: entities0) {
+        for (EntityDetail entity : entities0) {
             String typeName = entity.getType().getTypeDefName();
 
             int propertyCount = entity.getProperties().getPropertyCount();
@@ -205,34 +213,47 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
                 checkNamesProperties(entity, DB_NAME_VALUE, DATABASE_QUALIFIED_NAME);
                 assertNull(entity.getClassifications());
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.CONNECTION)) {
+            } else if (typeName.equals(SupportedTypes.CONNECTION)) {
                 assertTrue(propertyCount == 2);
-                checkNamesProperties(entity, SupportedTypes.CONNECTION_VALUE,DATABASE_QUALIFIED_NAME + "." + SupportedTypes.CONNECTION_VALUE);
+                checkNamesProperties(entity, SupportedTypes.CONNECTION_VALUE, DATABASE_QUALIFIED_NAME + "." + SupportedTypes.CONNECTION_VALUE);
                 assertNull(entity.getClassifications());
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.CONNECTOR_TYPE)) {
+            } else if (typeName.equals(SupportedTypes.CONNECTOR_TYPE)) {
                 assertTrue(propertyCount == 2);
-                checkNamesProperties(entity, SupportedTypes.CONNECTOR_TYPE_VALUE,DATABASE_QUALIFIED_NAME + "." + SupportedTypes.CONNECTOR_TYPE_VALUE);
+                checkNamesProperties(entity, SupportedTypes.CONNECTOR_TYPE_VALUE, DATABASE_QUALIFIED_NAME + "." + SupportedTypes.CONNECTOR_TYPE_VALUE);
                 assertNull(entity.getClassifications());
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE)) {
+            } else if (typeName.equals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE)) {
                 assertTrue(propertyCount == 2);
-                checkNamesProperties(entity, SupportedTypes.DEFAULT_RELATIONAL_DB_SCHEMA_TYPE,DATABASE_QUALIFIED_NAME + "." + SupportedTypes.DEFAULT_RELATIONAL_DB_SCHEMA_TYPE);
+                checkNamesProperties(entity, SupportedTypes.DEFAULT_RELATIONAL_DB_SCHEMA_TYPE, relationalDBTypeQualifiedName );
                 assertNull(entity.getClassifications());
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.ENDPOINT)) {
+            } else if (typeName.equals(SupportedTypes.ENDPOINT)) {
                 assertTrue(propertyCount == 3);
-                checkNamesProperties(entity, SupportedTypes.ENDPOINT_VALUE,DATABASE_QUALIFIED_NAME + "." + SupportedTypes.ENDPOINT_VALUE);
+                checkNamesProperties(entity, SupportedTypes.ENDPOINT_VALUE, DATABASE_QUALIFIED_NAME + "." + SupportedTypes.ENDPOINT_VALUE);
                 assertNull(entity.getClassifications());
+                foundExpected++;
+            } else if (deployedDBSchema && (typeName.equals(SupportedTypes.DEPLOYED_DATABASE_SCHEMA))) {
+                // TODO
                 foundExpected++;
             }
         }
-        assertEquals(foundExpected,5);
+        if (deployedDBSchema) {
+            assert (foundExpected == 6);
+        } else {
+            assert (foundExpected == 5);
+        }
+
         foundExpected = 0;
         List<Relationship> relationships0 = graphs.get(0).getRelationships();
 
-        assert(relationships0.size() == 4);
-        for (Relationship relationship: relationships0) {
+        if (deployedDBSchema) {
+            assert (relationships0.size() == 5);
+        } else {
+            assert (relationships0.size() == 4);
+        }
+
+        for (Relationship relationship : relationships0) {
             String typeName = relationship.getType().getTypeDefName();
             String ep1_guid = relationship.getEntityOneProxy().getGUID();
             String ep1_typeName = relationship.getEntityOneProxy().getType().getTypeDefName();
@@ -240,57 +261,75 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
             String ep2_typeName = relationship.getEntityTwoProxy().getType().getTypeDefName();
             assertNull(relationship.getProperties());
             if (typeName.equals(SupportedTypes.CONNECTION_TO_ASSET)) {
-                assertEquals(SupportedTypes.CONNECTION,ep1_typeName);
-                assertEquals(SupportedTypes.DATABASE,ep2_typeName);
+                assertEquals(SupportedTypes.CONNECTION, ep1_typeName);
+                assertEquals(SupportedTypes.DATABASE, ep2_typeName);
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.CONNECTION_CONNECTOR_TYPE)) {
-                assertEquals(SupportedTypes.CONNECTION,ep1_typeName);
-                assertEquals(SupportedTypes.CONNECTOR_TYPE,ep2_typeName);
+            } else if (typeName.equals(SupportedTypes.CONNECTION_CONNECTOR_TYPE)) {
+                assertEquals(SupportedTypes.CONNECTION, ep1_typeName);
+                assertEquals(SupportedTypes.CONNECTOR_TYPE, ep2_typeName);
                 foundExpected++;
             } else if (typeName.equals(SupportedTypes.CONNECTION_ENDPOINT)) {
-                assertEquals(SupportedTypes.CONNECTION,ep1_typeName);
-                assertEquals(SupportedTypes.ENDPOINT,ep2_typeName);
+                assertEquals(SupportedTypes.CONNECTION, ep1_typeName);
+                assertEquals(SupportedTypes.ENDPOINT, ep2_typeName);
                 foundExpected++;
-            } else     if (typeName.equals(SupportedTypes.ASSET_SCHEMA_TYPE)) {
-                assertEquals(SupportedTypes.DATABASE,ep1_typeName);
-                assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,ep2_typeName);
-                foundExpected++;
+            } else if (deployedDBSchema) {
+                if (typeName.equals(SupportedTypes.DATA_CONTENT_FOR_DATASET)) {
+                    assertEquals(SupportedTypes.DATABASE, ep1_typeName);
+                    assertEquals(SupportedTypes.DEPLOYED_DATABASE_SCHEMA, ep2_typeName);
+                    foundExpected++;
+                } else if (typeName.equals(SupportedTypes.ASSET_SCHEMA_TYPE)) {
+                    assertEquals(SupportedTypes.DEPLOYED_DATABASE_SCHEMA, ep1_typeName);
+                    assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE, ep2_typeName);
+                    foundExpected++;
+                }
             }
-            assertEquals(collection.getEntityDetail("user", ep1_guid).getType().getTypeDefName(),ep1_typeName);
-            assertEquals(collection.getEntityDetail("user", ep2_guid).getType().getTypeDefName(),ep2_typeName);
+            else if (typeName.equals(SupportedTypes.ASSET_SCHEMA_TYPE)) {
+                    assertEquals(SupportedTypes.DATABASE, ep1_typeName);
+                    assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE, ep2_typeName);
+                    foundExpected++;
+
+            }
+            assertEquals(collection.getEntityDetail("user", ep1_guid).getType().getTypeDefName(), ep1_typeName);
+            assertEquals(collection.getEntityDetail("user", ep2_guid).getType().getTypeDefName(), ep2_typeName);
         }
-        assertEquals(foundExpected,4);
+        if (deployedDBSchema) {
+            assert (foundExpected == 5);
+        } else {
+            assert (foundExpected == 4);
+        }
         foundExpected = 0;
         InstanceGraph graph1 = graphs.get(1);
         List<EntityDetail> entities1 = graph1.getEntities();
-        assert(entities1.size() == 4);
-
-        for (EntityDetail entity: entities1) {
+        assert (entities1.size() == 4);
+        String spark2FormatTable1QualifiedName =  relationalDBTypeQualifiedName + "." + SPARK_2_FORMAT_TABLE_1;
+        String spark3FormatTable1QualifiedNameAT_TABLE_1_QUALIFIED_NAME =  relationalDBTypeQualifiedName + "." + SPARK_3_FORMAT_TABLE_1;
+        String view1QualifiedName = relationalDBTypeQualifiedName + "." + VIEW_1;
+        for (EntityDetail entity : entities1) {
             String typeName = entity.getType().getTypeDefName();
 
             int propertyCount = entity.getProperties().getPropertyCount();
             if (typeName.equals(SupportedTypes.TABLE)) {
                 assertTrue(propertyCount == 2);
-                checkNamesProperties(entity, SPARK_2_FORMAT_TABLE_1, SPARK_2_FORMAT_TABLE_1_QUALIFIED_NAME);
+                checkNamesProperties(entity, SPARK_2_FORMAT_TABLE_1, spark2FormatTable1QualifiedName);
                 List<Classification> classifications = entity.getClassifications();
-                assertEquals(classifications.size(),1);
-                checkEmbeddedDBType(classifications.get(0),  SupportedTypes.RELATIONAL_TABLE_TYPE);
+                assertEquals(classifications.size(), 1);
+                checkEmbeddedDBType(classifications.get(0), SupportedTypes.RELATIONAL_TABLE_TYPE);
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.COLUMN)) {
+            } else if (typeName.equals(SupportedTypes.COLUMN)) {
                 assertTrue(propertyCount == 2);
-                checkColumnsProperties(entity, THREE_STRING_COLUMNS_NAMES, SPARK_2_FORMAT_TABLE_1_QUALIFIED_NAME);
+                checkColumnsProperties(entity, THREE_STRING_COLUMNS_NAMES, spark2FormatTable1QualifiedName);
                 List<Classification> classifications = entity.getClassifications();
-                assertEquals(classifications.size(),1);
+                assertEquals(classifications.size(), 1);
                 checkEmbeddedDBType(classifications.get(0), SupportedTypes.RELATIONAL_COLUMN_TYPE, "string");
                 foundExpected++;
             }
         }
-        assertEquals(foundExpected,4);
+        assertEquals(foundExpected, 4);
         foundExpected = 0;
         List<Relationship> relationships1 = graph1.getRelationships();
 
         assertEquals(relationships1.size(), 4);
-        for (Relationship relationship: relationships1) {
+        for (Relationship relationship : relationships1) {
             String typeName = relationship.getType().getTypeDefName();
             String ep1_guid = relationship.getEntityOneProxy().getGUID();
             String ep1_typeName = relationship.getEntityOneProxy().getType().getTypeDefName();
@@ -298,16 +337,16 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
             String ep2_typeName = relationship.getEntityTwoProxy().getType().getTypeDefName();
             assertNull(relationship.getProperties());
             if (typeName.equals(SupportedTypes.ATTRIBUTE_FOR_SCHEMA)) {
-                assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,ep1_typeName);
-                assertEquals(SupportedTypes.TABLE,ep2_typeName);
+                assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE, ep1_typeName);
+                assertEquals(SupportedTypes.TABLE, ep2_typeName);
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE)) {
-                assertEquals(SupportedTypes.TABLE,ep1_typeName);
-                assertEquals(SupportedTypes.COLUMN,ep2_typeName);
+            } else if (typeName.equals(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE)) {
+                assertEquals(SupportedTypes.TABLE, ep1_typeName);
+                assertEquals(SupportedTypes.COLUMN, ep2_typeName);
                 foundExpected++;
             }
-            assertEquals(collection.getEntityDetail("user", ep1_guid).getType().getTypeDefName(),ep1_typeName);
-            assertEquals(collection.getEntityDetail("user", ep2_guid).getType().getTypeDefName(),ep2_typeName);
+            assertEquals(collection.getEntityDetail("user", ep1_guid).getType().getTypeDefName(), ep1_typeName);
+            assertEquals(collection.getEntityDetail("user", ep2_guid).getType().getTypeDefName(), ep2_typeName);
         }
         assertEquals(foundExpected, 4);
         foundExpected = 0;
@@ -315,32 +354,32 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         List<EntityDetail> entities2 = graph2.getEntities();
 
         assertEquals(entities2.size(), 4);
-        for (EntityDetail entity: entities2) {
+        for (EntityDetail entity : entities2) {
             String typeName = entity.getType().getTypeDefName();
 
             int propertyCount = entity.getProperties().getPropertyCount();
             if (typeName.equals(SupportedTypes.TABLE)) {
                 assertTrue(propertyCount == 2);
-                checkNamesProperties(entity, SPARK_3_FORMAT_TABLE_1, SPARK_3_FORMAT_TABLE_1_QUALIFIED_NAME);
+                checkNamesProperties(entity, SPARK_3_FORMAT_TABLE_1, spark3FormatTable1QualifiedNameAT_TABLE_1_QUALIFIED_NAME);
                 List<Classification> classifications = entity.getClassifications();
-                assertEquals(classifications.size(),1);
+                assertEquals(classifications.size(), 1);
                 checkEmbeddedDBType(classifications.get(0), SupportedTypes.RELATIONAL_TABLE_TYPE);
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.COLUMN)) {
+            } else if (typeName.equals(SupportedTypes.COLUMN)) {
                 assertTrue(propertyCount == 2);
-                checkColumnsProperties(entity, THREE_STRING_COLUMNS_NAMES, SPARK_3_FORMAT_TABLE_1_QUALIFIED_NAME);
+                checkColumnsProperties(entity, THREE_STRING_COLUMNS_NAMES, spark3FormatTable1QualifiedNameAT_TABLE_1_QUALIFIED_NAME);
                 List<Classification> classifications = entity.getClassifications();
-                assertEquals(classifications.size(),1);
+                assertEquals(classifications.size(), 1);
                 checkEmbeddedDBType(classifications.get(0), SupportedTypes.RELATIONAL_COLUMN_TYPE, "string");
                 foundExpected++;
             }
         }
-        assertEquals( foundExpected, 4);
+        assertEquals(foundExpected, 4);
         foundExpected = 0;
 
         List<Relationship> relationships2 = graph2.getRelationships();
-        assert(relationships2.size() == 4);
-        for (Relationship relationship: relationships2) {
+        assert (relationships2.size() == 4);
+        for (Relationship relationship : relationships2) {
             String typeName = relationship.getType().getTypeDefName();
             String ep1_guid = relationship.getEntityOneProxy().getGUID();
             String ep1_typeName = relationship.getEntityOneProxy().getType().getTypeDefName();
@@ -348,38 +387,38 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
             String ep2_typeName = relationship.getEntityTwoProxy().getType().getTypeDefName();
             assertNull(relationship.getProperties());
             if (typeName.equals(SupportedTypes.ATTRIBUTE_FOR_SCHEMA)) {
-                assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,ep1_typeName);
+                assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE, ep1_typeName);
                 assertEquals(SupportedTypes.TABLE, ep2_typeName);
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE)) {
-                assertEquals(SupportedTypes.TABLE,ep1_typeName);
-                assertEquals(SupportedTypes.COLUMN,ep2_typeName);
+            } else if (typeName.equals(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE)) {
+                assertEquals(SupportedTypes.TABLE, ep1_typeName);
+                assertEquals(SupportedTypes.COLUMN, ep2_typeName);
                 foundExpected++;
             }
-            assertEquals(collection.getEntityDetail("user", ep1_guid).getType().getTypeDefName(),ep1_typeName);
-            assertEquals(collection.getEntityDetail("user", ep2_guid).getType().getTypeDefName(),ep2_typeName);
+            assertEquals(collection.getEntityDetail("user", ep1_guid).getType().getTypeDefName(), ep1_typeName);
+            assertEquals(collection.getEntityDetail("user", ep2_guid).getType().getTypeDefName(), ep2_typeName);
         }
         assertEquals(foundExpected, 4);
         foundExpected = 0;
         InstanceGraph graph3 = graphs.get(3);
         List<EntityDetail> entities3 = graph3.getEntities();
-        assert(entities3.size() == 3);
-        for (EntityDetail entity: entities3) {
+        assert (entities3.size() == 3);
+        for (EntityDetail entity : entities3) {
             String typeName = entity.getType().getTypeDefName();
 
             int propertyCount = entity.getProperties().getPropertyCount();
             if (typeName.equals(SupportedTypes.TABLE)) {
                 assertTrue(propertyCount == 2);
-                checkNamesProperties(entity, VIEW_1, VIEW_1_QUALIFIED_NAME);
+                checkNamesProperties(entity, VIEW_1, view1QualifiedName);
                 List<Classification> classifications = entity.getClassifications();
-                assertEquals(classifications.size(),2);
+                assertEquals(classifications.size(), 2);
                 int expectedClassificationCount = 0;
-                for (Classification classification: classifications) {
+                for (Classification classification : classifications) {
                     String classificationName = classification.getName();
                     InstanceProperties properties = classification.getProperties();
                     if (classificationName.equals(SupportedTypes.TYPE_EMBEDDED_ATTRIBUTE)) {
                         expectedClassificationCount++;
-                    } else  if (classificationName.equals(SupportedTypes.CALCULATED_VALUE)) {
+                    } else if (classificationName.equals(SupportedTypes.CALCULATED_VALUE)) {
                         expectedClassificationCount++;
                     } else {
                         assertFalse(true, "Unexpected classification on view");
@@ -388,11 +427,11 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
                 assertEquals(expectedClassificationCount, 2);
 
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.COLUMN)) {
+            } else if (typeName.equals(SupportedTypes.COLUMN)) {
                 assertTrue(propertyCount == 2);
-                checkColumnsProperties(entity, TWO_COLUMNS_NAMES, VIEW_1_QUALIFIED_NAME);
+                checkColumnsProperties(entity, TWO_COLUMNS_NAMES, view1QualifiedName);
                 List<Classification> classifications = entity.getClassifications();
-                assertEquals(classifications.size(),1);
+                assertEquals(classifications.size(), 1);
                 String columnType = "string";
                 if (getEntityName(entity).equals("col1")) {
                     columnType = "array<string>";
@@ -401,12 +440,12 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
                 foundExpected++;
             }
         }
-        assertEquals( foundExpected, 3);
+        assertEquals(foundExpected, 3);
         foundExpected = 0;
 
         List<Relationship> relationships3 = graph3.getRelationships();
-        assert(relationships3.size() == 3);
-        for (Relationship relationship: relationships3) {
+        assert (relationships3.size() == 3);
+        for (Relationship relationship : relationships3) {
             String typeName = relationship.getType().getTypeDefName();
             String ep1_guid = relationship.getEntityOneProxy().getGUID();
             String ep1_typeName = relationship.getEntityOneProxy().getType().getTypeDefName();
@@ -414,25 +453,27 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
             String ep2_typeName = relationship.getEntityTwoProxy().getType().getTypeDefName();
             assertNull(relationship.getProperties());
             if (typeName.equals(SupportedTypes.ATTRIBUTE_FOR_SCHEMA)) {
-                assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,ep1_typeName);
+                assertEquals(SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE, ep1_typeName);
                 assertEquals(SupportedTypes.TABLE, ep2_typeName);
                 foundExpected++;
-            } else  if (typeName.equals(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE)) {
-                assertEquals(SupportedTypes.TABLE,ep1_typeName);
-                assertEquals(SupportedTypes.COLUMN,ep2_typeName);
+            } else if (typeName.equals(SupportedTypes.NESTED_SCHEMA_ATTRIBUTE)) {
+                assertEquals(SupportedTypes.TABLE, ep1_typeName);
+                assertEquals(SupportedTypes.COLUMN, ep2_typeName);
                 foundExpected++;
             }
-            assertEquals(collection.getEntityDetail("user", ep1_guid).getType().getTypeDefName(),ep1_typeName);
-            assertEquals(collection.getEntityDetail("user", ep2_guid).getType().getTypeDefName(),ep2_typeName);
+            assertEquals(collection.getEntityDetail("user", ep1_guid).getType().getTypeDefName(), ep1_typeName);
+            assertEquals(collection.getEntityDetail("user", ep2_guid).getType().getTypeDefName(), ep2_typeName);
         }
         assertEquals(foundExpected, 3);
         checkQualifiedNamesAreUnique(graphs);
 
     }
+
     private void checkEmbeddedDBType(Classification classification, String entityType) {
-        checkEmbeddedDBType(classification,entityType, null);
+        checkEmbeddedDBType(classification, entityType, null);
     }
-    private void checkEmbeddedDBType(Classification classification, String entityType, String dataType ) {
+
+    private void checkEmbeddedDBType(Classification classification, String entityType, String dataType) {
         assertEquals(classification.getName(), SupportedTypes.TYPE_EMBEDDED_ATTRIBUTE);
         InstanceProperties properties = classification.getProperties();
         PrimitivePropertyValue value = (PrimitivePropertyValue) properties.getPropertyValue(SupportedTypes.SCHEMA_TYPE_NAME);
@@ -444,6 +485,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
             assertEquals(value.getPrimitiveValue(), dataType);
         }
     }
+
     private static String getEntityName(EntityDetail entity) throws UnsupportedEncodingException {
         String name = null;
         InstanceProperties properties = entity.getProperties();
@@ -452,7 +494,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         while (iter.hasNext()) {
             String propertyName = iter.next();
             String propertyValue = properties.getPropertyValue(propertyName).valueAsString();
-            if (propertyName.equals("name") ) {
+            if (propertyName.equals("name")) {
                 name = propertyValue;
             }
         }
@@ -460,13 +502,14 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
     }
 
     private static void checkNamesProperties(EntityDetail entity, String expectedName, String expectedQualifiedName) throws UnsupportedEncodingException {
-        InstanceProperties properties = entity.getProperties();;
+        InstanceProperties properties = entity.getProperties();
+        ;
         boolean isNameValid = false;
         boolean isQualifiedNameValid = false;
         String expectedGUID = Base64.getUrlEncoder().encodeToString(expectedQualifiedName.getBytes("UTF-8"));
 
-        Iterator<String> iter =  properties.getPropertyNames();
-        while(iter.hasNext()) {
+        Iterator<String> iter = properties.getPropertyNames();
+        while (iter.hasNext()) {
             String propertyName = iter.next();
             String propertyValue = properties.getPropertyValue(propertyName).valueAsString();
             if (propertyName.equals("name") && propertyValue.equals(expectedName)) {
@@ -483,10 +526,10 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
     private static void checkColumnsProperties(EntityDetail entity, Set<String> expectedNames, String expectedQualifiedNameRoot) throws UnsupportedEncodingException {
         InstanceProperties properties = entity.getProperties();
-        Iterator<String> iter =  properties.getPropertyNames();
+        Iterator<String> iter = properties.getPropertyNames();
         String nameToTest = null;
         String qualifiedNameToTest = null;
-        while(iter.hasNext()) {
+        while (iter.hasNext()) {
             String propertyName = iter.next();
             String propertyValue = properties.getPropertyValue(propertyName).valueAsString();
             if (propertyName.equals("name")) {
@@ -498,7 +541,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
             }
         }
         String expectedQualifiedName = expectedQualifiedNameRoot + "." + nameToTest;
-        assertEquals(expectedQualifiedName,qualifiedNameToTest);
+        assertEquals(expectedQualifiedName, qualifiedNameToTest);
         String expectedGUID = Base64.getUrlEncoder().encodeToString(expectedQualifiedName.getBytes("UTF-8"));
         assertTrue(entity.getGUID().equals(expectedGUID));
 
@@ -508,7 +551,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
     private SparkSchemaBean createSparkSchema(List<MockColumn> columns) {
         SparkSchemaBean sparkSchemaBean = new SparkSchemaBean();
 
-        for (MockColumn mockColumn: columns) {
+        for (MockColumn mockColumn : columns) {
             FieldSchema fs = new FieldSchema();
             fs.setName(mockColumn.getName());
             fs.setType(mockColumn.getType());
@@ -529,7 +572,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         StorageDescriptor sd = new StorageDescriptor();
         List<FieldSchema> cols = new ArrayList<>();
 
-        for (MockColumn mockColumn: columns) {
+        for (MockColumn mockColumn : columns) {
             FieldSchema fs = new FieldSchema();
             fs.setName(mockColumn.getName());
             fs.setType(mockColumn.getType());
@@ -541,11 +584,11 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
     private void checkQualifiedNamesAreUnique(List<InstanceGraph> graphs) {
         Set<String> qualifiedNames = new HashSet<>();
-        for (InstanceGraph graph: graphs) {
+        for (InstanceGraph graph : graphs) {
             List<EntityDetail> entityDetails = graph.getEntities();
-            for (EntityDetail entityDetail: entityDetails) {
-                PrimitivePropertyValue value = (PrimitivePropertyValue)entityDetail.getProperties().getInstanceProperties().get("qualifiedName");
-                String qualifiedName = (String)value.getPrimitiveValue();
+            for (EntityDetail entityDetail : entityDetails) {
+                PrimitivePropertyValue value = (PrimitivePropertyValue) entityDetail.getProperties().getInstanceProperties().get("qualifiedName");
+                String qualifiedName = (String) value.getPrimitiveValue();
                 assertNotNull(qualifiedName);
                 assertFalse((qualifiedNames.contains(qualifiedName)));
                 qualifiedNames.add(qualifiedName);
@@ -555,21 +598,21 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
     @Test
     protected void mapperTestHMSContentIncludeDeployedDBSchema() throws ConnectionCheckedException, IllegalAccessException, ConnectorCheckedException, NoSuchFieldException, IOException {
-        Map<String , Object> configProperties = new HashMap<>();
-        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, "default");
-        configProperties.put(  HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, "spark");
+        Map<String, Object> configProperties = new HashMap<>();
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME, "default");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME, "spark");
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.QUALIFIED_NAME_PREFIX, "data-engine::");
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
-        configProperties.put( HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.USE_SSL, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CACHE_INTO_CACHING_REPOSITORY, true);
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.SEND_POLL_EVENTS, true);
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_USER, "testUser");
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.METADATA_STORE_PASSWORD, "testPW");
         configProperties.put(HMSOMRSRepositoryEventMapperProvider.INCLUDE_DEPLOYED_SCHEMA, true);
         Map<String, String> connectionSecuredPropertiesMap = new HashMap<>();
-        connectionSecuredPropertiesMap.put("aaa","aaa-value");
-        connectionSecuredPropertiesMap.put("bbb","bbb-value");
-        connectionSecuredPropertiesMap.put("ccc","ccc-value");
-        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES,connectionSecuredPropertiesMap);
+        connectionSecuredPropertiesMap.put("aaa", "aaa-value");
+        connectionSecuredPropertiesMap.put("bbb", "bbb-value");
+        connectionSecuredPropertiesMap.put("ccc", "ccc-value");
+        configProperties.put(HMSOMRSRepositoryEventMapperProvider.CONNECTION_SECURED_PROPERTIES, connectionSecuredPropertiesMap);
 
 
         OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = getOmrsDatabasePollingRepositoryEventMapper(configProperties);
@@ -599,15 +642,15 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
         omrsDatabasePollingRepositoryEventMapper.setClient(mockMetaStoreClient);
 
         OMRSRepositoryHelper repositoryHelper = new MockRepositoryHelper();
-        OMRSMetadataCollection collection = new MockMetadataCollection(null, "test-repoName",repositoryHelper,null,"test-md-collection-id");
+        OMRSMetadataCollection collection = new MockMetadataCollection(null, "test-repoName", repositoryHelper, null, "test-md-collection-id");
         List<InstanceGraph> graphs = getInstanceGraphs(omrsDatabasePollingRepositoryEventMapper, repositoryHelper, collection);
 
         assertNotNull(graphs);
-        assert(graphs.size() == 2);
-        assert(graphs.get(0).getEntities().size() == 6);
-        assert(graphs.get(0).getRelationships().size() == 5);
-        assert(graphs.get(1).getEntities().size() == 3);
-        assert(graphs.get(1).getRelationships().size() == 3);
+        assert (graphs.size() == 2);
+        assert (graphs.get(0).getEntities().size() == 6);
+        assert (graphs.get(0).getRelationships().size() == 5);
+        assert (graphs.get(1).getEntities().size() == 3);
+        assert (graphs.get(1).getRelationships().size() == 3);
 
     }
 
@@ -634,14 +677,14 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
         Field f3 = omrsDatabasePollingRepositoryEventMapper.getClass().getDeclaredField("pollingThread");
         f3.setAccessible(true);
-        OMRSDatabasePollingRepositoryEventMapper.PollingThread thread =  (OMRSDatabasePollingRepositoryEventMapper.PollingThread)f3.get(omrsDatabasePollingRepositoryEventMapper);
+        OMRSDatabasePollingRepositoryEventMapper.PollingThread thread = (OMRSDatabasePollingRepositoryEventMapper.PollingThread) f3.get(omrsDatabasePollingRepositoryEventMapper);
         thread.run();
 
         List<InstanceGraph> graphs = mockOMRSRepositoryEventProcessor.getInstanceGraphList();
         return graphs;
     }
 
-    private static OMRSDatabasePollingRepositoryEventMapper getOmrsDatabasePollingRepositoryEventMapper(Map<String , Object> configProperties) throws ConnectionCheckedException, ConnectorCheckedException {
+    private static OMRSDatabasePollingRepositoryEventMapper getOmrsDatabasePollingRepositoryEventMapper(Map<String, Object> configProperties) throws ConnectionCheckedException, ConnectorCheckedException {
         ConnectorBroker cb = new ConnectorBroker();
 
         ConnectorType testConnType = new ConnectorType();
@@ -666,12 +709,12 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
         Connector newConnector = cb.getConnector(testConnectionProperties);
         assertNotNull(newConnector);
-        OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = (OMRSDatabasePollingRepositoryEventMapper)newConnector;
+        OMRSDatabasePollingRepositoryEventMapper omrsDatabasePollingRepositoryEventMapper = (OMRSDatabasePollingRepositoryEventMapper) newConnector;
         return omrsDatabasePollingRepositoryEventMapper;
     }
 
-    private CachingOMRSRepositoryProxyConnector getCachingOMRSRepositoryProxyConnector(OMRSMetadataCollection collection )
-            throws  IllegalAccessException, ConnectionCheckedException, ConnectorCheckedException, NoSuchFieldException {
+    private CachingOMRSRepositoryProxyConnector getCachingOMRSRepositoryProxyConnector(OMRSMetadataCollection collection)
+            throws IllegalAccessException, ConnectionCheckedException, ConnectorCheckedException, NoSuchFieldException {
         ConnectorBroker cb = new ConnectorBroker();
 
         ConnectorType testConnType = new ConnectorType();
@@ -689,7 +732,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest
 
         Connector newConnector = cb.getConnector(testConnectionProperties);
         assertNotNull(newConnector);
-        CachingOMRSRepositoryProxyConnector cachingOMRSRepositoryProxyConnector = (CachingOMRSRepositoryProxyConnector)newConnector;
+        CachingOMRSRepositoryProxyConnector cachingOMRSRepositoryProxyConnector = (CachingOMRSRepositoryProxyConnector) newConnector;
 
         Field f1 = cachingOMRSRepositoryProxyConnector.getClass().getSuperclass().getDeclaredField("metadataCollection");
         f1.setAccessible(true);

@@ -387,7 +387,7 @@ abstract public class OMRSEventProducer
         createConnectionOrientatedEntities(qualifiedName, databaseEntity);
         String  deployedDatabaseSchemaEntityGuid = null;
         if (includeDeployedSchema) {
-            qualifiedName = qualifiedName +SupportedTypes.SEPARATOR_CHAR + "defaultDeployedSchema";
+            qualifiedName = qualifiedName +SupportedTypes.SEPARATOR_CHAR + SupportedTypes.DEFAULT_DEPLOYED_SCHEMA_TOKEN_NAME;
             EntityDetail deployedDatabaseSchemaEntity = mapperHelper.getEntityDetailSkeleton(methodName,
                     SupportedTypes.DEPLOYED_DATABASE_SCHEMA,
                     SupportedTypes.DEFAULT_DEPLOYED_SCHEMA_TOKEN_NAME,
