@@ -54,6 +54,11 @@ public class StubRepositoryHelper implements OMRSRepositoryHelper {
     }
 
     @Override
+    public List<TypeDefLink> getSuperTypes(String sourceName, String typeDefName) {
+        return null;
+    }
+
+    @Override
     public InstanceProperties getUniqueProperties(String sourceName, String typeName, InstanceProperties allProperties) {
         return null;
     }
@@ -180,15 +185,12 @@ public class StubRepositoryHelper implements OMRSRepositoryHelper {
         relationship.setCreateTime(new Date());
         relationship.setGUID(guid);
         relationship.setVersion(1L);
-InstanceType instanceType = new InstanceType(TypeDefCategory.RELATIONSHIP_DEF,
-       "typeDefGUID",
-       typeName,
-       0L,
-        "typeDefDescription",
-       "typeDefDescriptionGUID",
-        null,
-null, //        validStatusList,
-        null);
+        InstanceType instanceType = new InstanceType(TypeDefCategory.RELATIONSHIP_DEF,
+                                                     "typeDefGUID",
+                                                     typeName,
+                                                     0L
+                                                     //        validStatusList,
+        );
         relationship.setType(instanceType);
         relationship.setStatus(InstanceStatus.ACTIVE);
         relationship.setCreatedBy(userName);
@@ -574,6 +576,18 @@ null, //        validStatusList,
 
     @Override
     public int removeIntProperty(String sourceName, String propertyName, InstanceProperties properties, String methodName) {
+        return 0;
+    }
+
+    @Override
+    public long getLongProperty(String sourceName, String propertyName, InstanceProperties properties,
+                                String methodName) {
+        return 0;
+    }
+
+    @Override
+    public long removeLongProperty(String sourceName, String propertyName, InstanceProperties properties,
+                                   String methodName) {
         return 0;
     }
 

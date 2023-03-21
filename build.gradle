@@ -12,13 +12,13 @@
 
 plugins {
     id 'java-library'
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.johnrengelman.shadow" version "8.1.0"
     id 'idea'
     id 'maven-publish'
     // Checks for unnecessary & problematic dependencies
     id 'com.autonomousapps.dependency-analysis' version "1.19.0"
     // helps resolve log implementation clashes
-    id 'dev.jacomet.logging-capabilities' version "0.10.0"
+    id 'dev.jacomet.logging-capabilities' version "0.11.0"
     // This plugin helps resolve jakarta/javax clashes
     id 'org.gradlex.java-ecosystem-capabilities' version "1.1"
 }
@@ -36,7 +36,7 @@ repositories {
         url "https://maven.atlassian.com/3rdparty"
     }
     // uncomment to pick up from local ~/.m2 - but can be unpredictable. recommend to use maven central and snapshots
-    // mavenLocal()
+    mavenLocal()
 
     // Repository for custom IBM hive connector
     if (project.hasProperty("ibmhive")) {
@@ -57,19 +57,19 @@ repositories {
 
 // Project information
 group = 'org.odpi.egeria'
-version = '1.0-SNAPSHOT'
+version = '1.1-SNAPSHOT'
 ext.name = 'Egeria Hive Metastore Connector'
 description = 'Egeria Connector for Hive Metastore'
 
 // Versions - most should be picked up from the import of the Egeria base POM
 ext {
-    egeriaversion = '3.15'
-    cachingconnectorversion = '1.0-SNAPSHOT'
+    egeriaversion = '4.0-SNAPSHOT'
+    cachingconnectorversion = '1.1-SNAPSHOT'
     hiveVersion = '3.1.3'
     ibmHiveVersion = '3.1.2'
     hadoopVersion = '3.3.4'
-    hiveStorageVersion = '2.7.0'
-    thriftVersion = '0.17.0'
+    hiveStorageVersion = '2.8.1'
+    thriftVersion = '0.18.0'
 }
 
 
@@ -95,7 +95,7 @@ dependencies {
 
     // Include at compile & runtime - to support use of connector
     implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-    implementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
+    runtimeOnly 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
     implementation 'org.apache.thrift:libthrift:${thriftVersion}'
 
     // Use standard client library version by default, replace with an alternate library for IBM config
@@ -114,6 +114,8 @@ dependencies {
     testCompileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
     testRuntimeOnly "org.odpi.egeria:repository-services-apis"
     testRuntimeOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+    testCompileOnly "org.odpi.egeria:audit-log-framework"
+    testCompileOnly "org.odpi.egeria:open-connector-framework"
 
 }
 
@@ -127,13 +129,7 @@ configurations.all {
     exclude group: 'ch.qos.reload4j', module: 'reload4j'
     exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
     exclude group: 'log4j', module: 'log4j'
-    // Exclusions such as protobuf may be vulnarable - will not affect core egeria as in shaded library
-    // exclude here, and remove from shading to use egeria versions, or add explicit dependency override
-    //exclude group: 'com.google.protobuf', module: 'protobuf-java'
-    //exclude group: "org.eclipse.jetty"
-    //exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
-    //exclude group: 'io.netty'
-    //exclude group: 'com.google.guava'
+    exclude group: 'commons-logging', module: 'commons-logging'
 }
 
 // Testing
@@ -154,8 +150,8 @@ test {
 // Maven Central (technically sonatype oss) requires we distribute source and javadoc.
 // Also declare use of java 11 language & target
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     withJavadocJar()
     withSourcesJar()
 }
@@ -163,8 +159,8 @@ java {
 // More Java language settings & linting
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
-    sourceCompatibility = "11"
-    targetCompatibility = "11"
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
     options.incremental = true
     options.fork = true
     options.failOnError = true
