@@ -2,7 +2,6 @@
 /* Copyright Contributors to the ODPi Egeria project. */
 package org.odpi.egeria.connectors.hms.eventmapper;
 
-import org.odpi.openmetadata.frameworks.auditlog.AuditLog;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.MatchCriteria;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.instances.*;
 import org.odpi.openmetadata.repositoryservices.connectors.stores.metadatacollectionstore.properties.search.SearchClassifications;
@@ -479,9 +478,13 @@ public class MockRepositoryContentValidator implements OMRSRepositoryValidator {
     }
 
     @Override
-    public void validateReferenceInstanceHeader(String sourceName, String localMetadataCollectionId, String instanceParameterName, InstanceHeader instance, AuditLog auditLog, String methodName) throws InvalidParameterException, RepositoryErrorException {
+    public void validateReferenceInstanceHeader(String sourceName, String localMetadataCollectionId,
+                                                String instanceParameterName, InstanceHeader instance,
+                                                org.odpi.openmetadata.frameworks.auditlog.AuditLog auditLog,
+                                                String methodName) throws InvalidParameterException, RepositoryErrorException {
 
     }
+
 
     @Override
     public void validateEntityProxy(String sourceName, String localMetadataCollectionId, String proxyParameterName, EntityProxy entityProxy, String methodName) throws InvalidParameterException {
