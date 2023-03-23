@@ -72,8 +72,6 @@ ext {
     hiveStorageVersion = '2.8.1'
     thriftVersion = '0.18.0'
 }
-test.onlyIf { !project.hasProperty("hmsv4") }
-testClasses.onlyIf { !project.hasProperty("hmsv4") }
 
 // Dependencies
 dependencies {
