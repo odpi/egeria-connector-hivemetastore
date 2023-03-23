@@ -210,6 +210,11 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 
         Table hmsTable = null;
         try {
+//            GetTableRequest req= new GetTableRequest();
+//            req.setCatName(catName);
+//            req.setDbName(dbName);
+//            req.setTblName(tableName);
+//            hmsTable = client.getTable(req);
             hmsTable = client.getTable(catName, dbName, tableName);
         } catch (TException e) {
             auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLE_FAILED.getMessageDefinition(tableName, e.getMessage()));
@@ -274,17 +279,18 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         if (tableType != null && tableType.equals("EXTERNAL_TABLE")) {
             Map<String, String> parameters = hmsTable.getParameters();
             String numberOfSchemaPartsString = parameters.get(SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS);
-            String schemaAsJSON = "";
+            String schemaAsJSON = null;
             if (numberOfSchemaPartsString == null) {
                 schemaAsJSON = parameters.get(SPARK_SQL_SOURCES_SCHEMA);
             } else {
                 Integer numberOfSchemaParts = Integer.valueOf(numberOfSchemaPartsString);
+                schemaAsJSON= "";
                 //stitch together the parts
                 for (int i = 0; i < numberOfSchemaParts; i++) {
                     schemaAsJSON = schemaAsJSON + parameters.get(SPARK_SQL_SOURCES_SCHEMA_PART + i);
                 }
             }
-            if (!schemaAsJSON.equals("")) {
+            if (schemaAsJSON != null) {
                 // Note that I attempted to use the SparkSchemaBean in the test folder to deserialise the json, but it errored.
                 // So I am walking the json nodes to extract the information
                 ObjectMapper objectMapper = new ObjectMapper();

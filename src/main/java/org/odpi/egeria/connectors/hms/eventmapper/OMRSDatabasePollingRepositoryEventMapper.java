@@ -3,6 +3,7 @@
 package org.odpi.egeria.connectors.hms.eventmapper;
 
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
+
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
 import org.odpi.egeria.connectors.hms.helpers.ExceptionHelper;

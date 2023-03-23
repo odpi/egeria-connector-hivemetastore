@@ -6,7 +6,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 
 import java.util.*;
 
-public class MockMetaStoreClient extends StubMetaStoreClient {
+public class MockMetaStoreClient extends StubMetaStoreClientv3 {
 
     private Map<String, Table> tableMap = new HashMap<>();
     @Override

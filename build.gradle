@@ -65,13 +65,15 @@ description = 'Egeria Connector for Hive Metastore'
 ext {
     egeriaversion = '4.0-SNAPSHOT'
     cachingconnectorversion = '1.1-SNAPSHOT'
-    hiveVersion = '3.1.3'
-    ibmHiveVersion = '3.1.2'
+    hmsVersion3 = '3.1.3'
+    hmsVersion4 = '4.0.0-alpha-2'
+    ibmhmsVersion = '3.1.2'
     hadoopVersion = '3.3.4'
     hiveStorageVersion = '2.8.1'
     thriftVersion = '0.18.0'
 }
-
+test.onlyIf { !project.hasProperty("hmsv4") }
+testClasses.onlyIf { !project.hasProperty("hmsv4") }
 
 // Dependencies
 dependencies {
@@ -101,23 +103,30 @@ dependencies {
     // Use standard client library version by default, replace with an alternate library for IBM config
     // and resolve some differences in dependencies
     if (project.hasProperty("ibmhive")) {
-        api("com.ibm.hive:hive-metastore-standalone-client:${ibmHiveVersion}")
+        api("com.ibm.hive:hive-metastore-standalone-client:${ibmhmsVersion}")
+    }  else if (project.hasProperty("hmsv4")) {
+        // this is implementation not API, so that it brings in GetTableRequest, which is required at runtime by the hms client
+        // this is not using the variable for the version - I think something about the characters is not
+        // allowing me to - so I have hard coded for now.
+        implementation 'org.apache.hive:hive-standalone-metastore-common:4.0.0-alpha-2'
+
     } else {
-        api("org.apache.hive:hive-standalone-metastore:${hiveVersion}")
+        api("org.apache.hive:hive-standalone-metastore:${hmsVersion3}")
         testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
     }
-
-    // Only needed to compile test code
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-    testImplementation 'org.junit.jupiter:junit-jupiter-api'
-    //testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
-    testCompileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
-    testRuntimeOnly "org.odpi.egeria:repository-services-apis"
-    testRuntimeOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
-    testCompileOnly "org.odpi.egeria:audit-log-framework"
-    testCompileOnly "org.odpi.egeria:open-connector-framework"
-
+    if (!project.hasProperty("hmsv4")) {
+        // Only needed to compile test code
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+        testImplementation 'org.junit.jupiter:junit-jupiter-api'
+        //testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
+        testCompileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+        testRuntimeOnly "org.odpi.egeria:repository-services-apis"
+        testRuntimeOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+        testCompileOnly "org.odpi.egeria:audit-log-framework"
+        testCompileOnly "org.odpi.egeria:open-connector-framework"
+    }
 }
+
 
 // Further refinement - Resolve some dependency clashes/issues
 configurations.all {

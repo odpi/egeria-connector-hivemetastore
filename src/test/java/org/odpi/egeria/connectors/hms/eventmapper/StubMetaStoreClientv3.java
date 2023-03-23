@@ -25,7 +25,7 @@ import java.util.Map;
  * Some methods have been added so that the code can work with a 3.1.2 HMS interface.
  * Deprecation warning as suppressed.
  */
-public class StubMetaStoreClient implements IMetaStoreClient {
+public class StubMetaStoreClientv3 implements IMetaStoreClient {
 
     // needed to work with 3.1.2 client
     public void alter_partitions(String catName, String dbName, List<Partition> newParts, EnvironmentContext environmentContext, String a) throws InvalidOperationException, MetaException, TException {
