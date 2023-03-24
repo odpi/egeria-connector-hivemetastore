@@ -49,7 +49,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
     public static final String SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS = "spark.sql.sources.schema.numParts";
     public static final String SPARK_SQL_SOURCES_SCHEMA_PART = "spark.sql.sources.schema.part.";
     public static final String SPARK_SQL_SOURCES_SCHEMA = "spark.sql.sources.schema";
-    private IMetaStoreClient client = null;
+    private IMetaStoreClientFacade client = null;
 
 
     private final String className = this.getClass().getName();
@@ -71,11 +71,11 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 
     }
 
-    public IMetaStoreClient getClient() {
+    public IMetaStoreClientFacade getClient() {
         return client;
     }
 
-    public void setClient(IMetaStoreClient client) {
+    public void setClient(IMetaStoreClientFacade client) {
         this.client = client;
     }
 
@@ -147,7 +147,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
             try {
                 if (client == null) {
                     // we are not testing
-                    client = new HiveMetaStoreClient(conf, null, false);
+                    client = new HMSMetaStoreClientFacade(conf);
                 }
             } catch (MetaException e) {
                 ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
@@ -210,11 +210,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 
         Table hmsTable = null;
         try {
-//            GetTableRequest req= new GetTableRequest();
-//            req.setCatName(catName);
-//            req.setDbName(dbName);
-//            req.setTblName(tableName);
-//            hmsTable = client.getTable(req);
             hmsTable = client.getTable(catName, dbName, tableName);
         } catch (TException e) {
             auditLog.logMessage(methodName, HMSOMRSAuditCode.HIVE_GETTABLE_FAILED.getMessageDefinition(tableName, e.getMessage()));

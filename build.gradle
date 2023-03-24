@@ -7,7 +7,7 @@
  *
  * To build version to support IBM Data Engine
  * See https://cloud.ibm.com/docs/sql-query?topic=sql-query-hive_metastore#apache-hive-metastore-3.1.2-compatible-client
- *  ./gradlew build -Pibmhive
+ *  ./gradlew build -Pibmhms
  */
 
 plugins {
@@ -39,7 +39,7 @@ repositories {
     mavenLocal()
 
     // Repository for custom IBM hive connector
-    if (project.hasProperty("ibmhive")) {
+    if (project.hasProperty("ibmhms")) {
 
         ivy {
             url 'https://us.sql-query.cloud.ibm.com'
@@ -100,7 +100,7 @@ dependencies {
 
     // Use standard client library version by default, replace with an alternate library for IBM config
     // and resolve some differences in dependencies
-    if (project.hasProperty("ibmhive")) {
+    if (project.hasProperty("ibmhms")) {
         api("com.ibm.hive:hive-metastore-standalone-client:${ibmhmsVersion}")
     }  else if (project.hasProperty("hmsv4")) {
         // this is implementation not API, so that it brings in GetTableRequest, which is required at runtime by the hms client
@@ -112,17 +112,17 @@ dependencies {
         api("org.apache.hive:hive-standalone-metastore:${hmsVersion3}")
         testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
     }
-    if (!project.hasProperty("hmsv4")) {
-        // Only needed to compile test code
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-        testImplementation 'org.junit.jupiter:junit-jupiter-api'
-        //testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
-        testCompileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
-        testRuntimeOnly "org.odpi.egeria:repository-services-apis"
-        testRuntimeOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
-        testCompileOnly "org.odpi.egeria:audit-log-framework"
-        testCompileOnly "org.odpi.egeria:open-connector-framework"
-    }
+
+    // Only needed to compile test code
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    //testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
+    testCompileOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+    testRuntimeOnly "org.odpi.egeria:repository-services-apis"
+    testRuntimeOnly "org.odpi.egeria:egeria-connector-omrs-caching:${cachingconnectorversion}"
+    testCompileOnly "org.odpi.egeria:audit-log-framework"
+    testCompileOnly "org.odpi.egeria:open-connector-framework"
+
 }
 
 

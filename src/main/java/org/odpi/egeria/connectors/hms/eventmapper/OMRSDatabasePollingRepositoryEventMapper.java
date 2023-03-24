@@ -54,7 +54,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
 
     private HMSOMRSEventProducer omrsEventProducer = null;
 
-    private IMetaStoreClient client = null;
+    private IMetaStoreClientFacade client = null;
     private boolean testing = false;
 
 
@@ -66,7 +66,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         super();
     }
 
-    public void setClient(IMetaStoreClient client) {
+    public void setClient(IMetaStoreClientFacade client) {
         this.client = client;
     }
 
