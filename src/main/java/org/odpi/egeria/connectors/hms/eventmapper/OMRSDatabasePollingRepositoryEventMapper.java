@@ -84,7 +84,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         super.start();
 
         final String methodName = "start";
-        // synchronise in case the start occurs while the thread is running accessing the private varioables.
+        // synchronise in case the start occurs while the thread is running accessing the private variables.
         // this synchronisation should ensure that all the config is updated together before the polling thread accesses them
         synchronized (this) {
             //repositoryName = this.repositoryConnector.getRepositoryName();
