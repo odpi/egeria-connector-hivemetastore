@@ -11,8 +11,8 @@ public class SupportedTypes {
     // this should be a natural to the technology separator character to be used to separate elements in a name.
     public static final String SEPARATOR_CHAR = ".";
 
-    public static final String DEFAULT_DEPLOYED_SCHEMA_TOKEN_NAME = "default-deployed-schema";
-    public static final String DEFAULT_RELATIONAL_DB_SCHEMA_TYPE = "default-relational-DB-Schema-Type";
+    public static final String DEFAULT_DEPLOYED_SCHEMA_TOKEN_NAME = "deployed-schema";
+    public static final String DEFAULT_RELATIONAL_DB_SCHEMA_TYPE = "relational-DB-Schema-Type";
 
 
     public static final String CONNECTION = "Connection";

@@ -3,6 +3,7 @@
 package org.odpi.egeria.connectors.hms.eventmapper;
 
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
+
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSAuditCode;
 import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
 import org.odpi.egeria.connectors.hms.helpers.ExceptionHelper;
@@ -53,7 +54,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
 
     private HMSOMRSEventProducer omrsEventProducer = null;
 
-    private IMetaStoreClient client = null;
+    private IMetaStoreClientFacade client = null;
     private boolean testing = false;
 
 
@@ -65,7 +66,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         super();
     }
 
-    public void setClient(IMetaStoreClient client) {
+    public void setClient(IMetaStoreClientFacade client) {
         this.client = client;
     }
 
@@ -83,7 +84,7 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         super.start();
 
         final String methodName = "start";
-        // synchronise in case the start occurs while the thread is running accessing the private varioables.
+        // synchronise in case the start occurs while the thread is running accessing the private variables.
         // this synchronisation should ensure that all the config is updated together before the polling thread accesses them
         synchronized (this) {
             //repositoryName = this.repositoryConnector.getRepositoryName();

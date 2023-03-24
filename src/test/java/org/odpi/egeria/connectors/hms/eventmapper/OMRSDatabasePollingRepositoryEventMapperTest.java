@@ -663,21 +663,21 @@ public class OMRSDatabasePollingRepositoryEventMapperTest {
 
 
         //    Set the mock repository connector into the event mapper using reflection as it is a protected field.
-        Field f1 = omrsDatabasePollingRepositoryEventMapper.getClass().getSuperclass().getSuperclass().getDeclaredField("repositoryConnector");
-        f1.setAccessible(true);
-        f1.set(omrsDatabasePollingRepositoryEventMapper, cachingOMRSRepositoryProxyConnector);
+        Field repositoryConnector_field = omrsDatabasePollingRepositoryEventMapper.getClass().getSuperclass().getSuperclass().getDeclaredField("repositoryConnector");
+        repositoryConnector_field.setAccessible(true);
+        repositoryConnector_field.set(omrsDatabasePollingRepositoryEventMapper, cachingOMRSRepositoryProxyConnector);
 
-        Field f2 = omrsDatabasePollingRepositoryEventMapper.getClass().getSuperclass().getSuperclass().getDeclaredField("repositoryEventProcessor");
-        f2.setAccessible(true);
+        Field repositoryEventProcessor_field = omrsDatabasePollingRepositoryEventMapper.getClass().getSuperclass().getSuperclass().getDeclaredField("repositoryEventProcessor");
+        repositoryEventProcessor_field.setAccessible(true);
         MockOMRSRepositoryEventProcessor mockOMRSRepositoryEventProcessor = new MockOMRSRepositoryEventProcessor("MockOMRSRepositoryEventProcessor");
-        f2.set(omrsDatabasePollingRepositoryEventMapper, mockOMRSRepositoryEventProcessor);
+        repositoryEventProcessor_field.set(omrsDatabasePollingRepositoryEventMapper, mockOMRSRepositoryEventProcessor);
 
         // run with the mock
         omrsDatabasePollingRepositoryEventMapper.start();
 
-        Field f3 = omrsDatabasePollingRepositoryEventMapper.getClass().getDeclaredField("pollingThread");
-        f3.setAccessible(true);
-        OMRSDatabasePollingRepositoryEventMapper.PollingThread thread = (OMRSDatabasePollingRepositoryEventMapper.PollingThread) f3.get(omrsDatabasePollingRepositoryEventMapper);
+        Field pollingThread_field = omrsDatabasePollingRepositoryEventMapper.getClass().getDeclaredField("pollingThread");
+        pollingThread_field.setAccessible(true);
+        OMRSDatabasePollingRepositoryEventMapper.PollingThread thread = (OMRSDatabasePollingRepositoryEventMapper.PollingThread) pollingThread_field.get(omrsDatabasePollingRepositoryEventMapper);
         thread.run();
 
         List<InstanceGraph> graphs = mockOMRSRepositoryEventProcessor.getInstanceGraphList();
@@ -734,22 +734,22 @@ public class OMRSDatabasePollingRepositoryEventMapperTest {
         assertNotNull(newConnector);
         CachingOMRSRepositoryProxyConnector cachingOMRSRepositoryProxyConnector = (CachingOMRSRepositoryProxyConnector) newConnector;
 
-        Field f1 = cachingOMRSRepositoryProxyConnector.getClass().getSuperclass().getDeclaredField("metadataCollection");
-        f1.setAccessible(true);
-        f1.set(cachingOMRSRepositoryProxyConnector, collection);
+        Field metadataCollection_field = cachingOMRSRepositoryProxyConnector.getClass().getSuperclass().getDeclaredField("metadataCollection");
+        metadataCollection_field.setAccessible(true);
+        metadataCollection_field.set(cachingOMRSRepositoryProxyConnector, collection);
         // set parent collector in collection
-        Field f2 = collection.getClass().getSuperclass().getSuperclass().getDeclaredField("parentConnector");
-        f2.setAccessible(true);
-        f2.set(collection, cachingOMRSRepositoryProxyConnector);
+        Field parentConnector_field = collection.getClass().getSuperclass().getSuperclass().getDeclaredField("parentConnector");
+        parentConnector_field.setAccessible(true);
+        parentConnector_field.set(collection, cachingOMRSRepositoryProxyConnector);
 
 
         OMRSRepositoryValidator MockRepositoryContentValidator = new MockRepositoryContentValidator();
-        Field f3 = collection.getClass().getSuperclass().getSuperclass().getDeclaredField("repositoryValidator");
-        f3.setAccessible(true);
-        f3.set(collection, MockRepositoryContentValidator);
-        Field f4 = cachingOMRSRepositoryProxyConnector.getClass().getSuperclass().getSuperclass().getDeclaredField("isActive");
-        f4.setAccessible(true);
-        f4.set(cachingOMRSRepositoryProxyConnector, true);
+        Field repositoryValidator_field = collection.getClass().getSuperclass().getSuperclass().getDeclaredField("repositoryValidator");
+        repositoryValidator_field.setAccessible(true);
+        repositoryValidator_field.set(collection, MockRepositoryContentValidator);
+        Field isActive_field = cachingOMRSRepositoryProxyConnector.getClass().getSuperclass().getSuperclass().getDeclaredField("isActive");
+        isActive_field.setAccessible(true);
+        isActive_field.set(cachingOMRSRepositoryProxyConnector, true);
 
         return cachingOMRSRepositoryProxyConnector;
 

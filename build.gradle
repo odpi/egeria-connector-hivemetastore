@@ -7,7 +7,7 @@
  *
  * To build version to support IBM Data Engine
  * See https://cloud.ibm.com/docs/sql-query?topic=sql-query-hive_metastore#apache-hive-metastore-3.1.2-compatible-client
- *  ./gradlew build -Pibmhive
+ *  ./gradlew build -Pibmhms
  */
 
 plugins {
@@ -39,7 +39,7 @@ repositories {
     mavenLocal()
 
     // Repository for custom IBM hive connector
-    if (project.hasProperty("ibmhive")) {
+    if (project.hasProperty("ibmhms")) {
 
         ivy {
             url 'https://us.sql-query.cloud.ibm.com'
@@ -65,13 +65,13 @@ description = 'Egeria Connector for Hive Metastore'
 ext {
     egeriaversion = '4.0-SNAPSHOT'
     cachingconnectorversion = '1.1-SNAPSHOT'
-    hiveVersion = '3.1.3'
-    ibmHiveVersion = '3.1.2'
+    hmsVersion3 = '3.1.3'
+    hmsVersion4 = '4.0.0-alpha-2'
+    ibmhmsVersion = '3.1.2'
     hadoopVersion = '3.3.4'
     hiveStorageVersion = '2.8.1'
     thriftVersion = '0.18.0'
 }
-
 
 // Dependencies
 dependencies {
@@ -100,10 +100,16 @@ dependencies {
 
     // Use standard client library version by default, replace with an alternate library for IBM config
     // and resolve some differences in dependencies
-    if (project.hasProperty("ibmhive")) {
-        api("com.ibm.hive:hive-metastore-standalone-client:${ibmHiveVersion}")
+    if (project.hasProperty("ibmhms")) {
+        api("com.ibm.hive:hive-metastore-standalone-client:${ibmhmsVersion}")
+    }  else if (project.hasProperty("hmsv4")) {
+        // this is implementation not API, so that it brings in GetTableRequest, which is required at runtime by the hms client
+        // this is not using the variable for the version - I think something about the characters is not
+        // allowing me to - so I have hard coded for now.
+        implementation 'org.apache.hive:hive-standalone-metastore-common:4.0.0-alpha-2'
+
     } else {
-        api("org.apache.hive:hive-standalone-metastore:${hiveVersion}")
+        api("org.apache.hive:hive-standalone-metastore:${hmsVersion3}")
         testImplementation 'org.apache.hive:hive-storage-api:${hiveStorageVersion}'
     }
 
@@ -118,6 +124,7 @@ dependencies {
     testCompileOnly "org.odpi.egeria:open-connector-framework"
 
 }
+
 
 // Further refinement - Resolve some dependency clashes/issues
 configurations.all {

@@ -49,7 +49,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
     public static final String SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS = "spark.sql.sources.schema.numParts";
     public static final String SPARK_SQL_SOURCES_SCHEMA_PART = "spark.sql.sources.schema.part.";
     public static final String SPARK_SQL_SOURCES_SCHEMA = "spark.sql.sources.schema";
-    private IMetaStoreClient client = null;
+    private IMetaStoreClientFacade client = null;
 
 
     private final String className = this.getClass().getName();
@@ -71,11 +71,11 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 
     }
 
-    public IMetaStoreClient getClient() {
+    public IMetaStoreClientFacade getClient() {
         return client;
     }
 
-    public void setClient(IMetaStoreClient client) {
+    public void setClient(IMetaStoreClientFacade client) {
         this.client = client;
     }
 
@@ -147,7 +147,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
             try {
                 if (client == null) {
                     // we are not testing
-                    client = new HiveMetaStoreClient(conf, null, false);
+                    client = new HMSMetaStoreClientFacade(conf);
                 }
             } catch (MetaException e) {
                 ExceptionHelper.raiseConnectorCheckedException(this.getClass().getName(), HMSOMRSErrorCode.FAILED_TO_START_CONNECTOR, methodName, null);
@@ -274,17 +274,18 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         if (tableType != null && tableType.equals("EXTERNAL_TABLE")) {
             Map<String, String> parameters = hmsTable.getParameters();
             String numberOfSchemaPartsString = parameters.get(SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS);
-            String schemaAsJSON = "";
+            String schemaAsJSON = null;
             if (numberOfSchemaPartsString == null) {
                 schemaAsJSON = parameters.get(SPARK_SQL_SOURCES_SCHEMA);
             } else {
                 Integer numberOfSchemaParts = Integer.valueOf(numberOfSchemaPartsString);
+                schemaAsJSON= "";
                 //stitch together the parts
                 for (int i = 0; i < numberOfSchemaParts; i++) {
                     schemaAsJSON = schemaAsJSON + parameters.get(SPARK_SQL_SOURCES_SCHEMA_PART + i);
                 }
             }
-            if (!schemaAsJSON.equals("")) {
+            if (schemaAsJSON != null) {
                 // Note that I attempted to use the SparkSchemaBean in the test folder to deserialise the json, but it errored.
                 // So I am walking the json nodes to extract the information
                 ObjectMapper objectMapper = new ObjectMapper();

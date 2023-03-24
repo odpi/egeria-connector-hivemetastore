@@ -6,6 +6,10 @@ import org.odpi.egeria.connectors.hms.auditlog.HMSOMRSErrorCode;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedException;
 import org.odpi.openmetadata.repositoryservices.ffdc.exception.RepositoryErrorException;
 
+/**
+ * this class has methods that accept an error code and throws the apppropriate Exception
+ * including the supplied error information
+ */
 public class ExceptionHelper {
 
     /**
