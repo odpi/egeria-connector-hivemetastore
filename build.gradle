@@ -8,8 +8,9 @@
  * To build version to support IBM Data Engine
  * See https://cloud.ibm.com/docs/sql-query?topic=sql-query-hive_metastore#apache-hive-metastore-3.1.2-compatible-client
  *  ./gradlew build -Pibmhms
- *  * To build version to support to work with hms v4
- *  *  ./gradlew build -Phmsv4
+ *  
+ * To build version to support to work with hms v4
+ *  ./gradlew build -Phmsv4
  */
 
 plugins {
