@@ -70,7 +70,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: odpi/egeria:${{ env.CONNECTOR_VERSION }}, odpi/egeria:latest, quay.io/odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}, quay.io/odpi/egeria-connector-hivemetastore:latest
+          tags: odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}, odpi/egeria:latest, quay.io/odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}, quay.io/odpi/egeria-connector-hivemetastore:latest
           platforms: linux/amd64,linux/arm64
           build-args: |
             EGERIA_BASE_IMAGE=${{ env.EGERIA_BASE_IMAGE }}
@@ -82,7 +82,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: odpi/egeria:${{ env.CONNECTOR_VERSION }}, quay.io/odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}
+          tags: odpi/egeria-connector-hive-metastore:${{ env.CONNECTOR_VERSION }}, quay.io/odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             EGERIA_BASE_IMAGE=${{ env.EGERIA_BASE_IMAGE }}
