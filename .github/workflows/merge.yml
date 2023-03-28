@@ -70,7 +70,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}, odpi/egeria:latest, quay.io/odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}, quay.io/odpi/egeria-connector-hivemetastore:latest
+          tags: odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}, odpi/egeria-connector-hivemetastore:latest, quay.io/odpi/egeria-connector-hivemetastore:${{ env.CONNECTOR_VERSION }}, quay.io/odpi/egeria-connector-hivemetastore:latest
           platforms: linux/amd64,linux/arm64
           build-args: |
             EGERIA_BASE_IMAGE=${{ env.EGERIA_BASE_IMAGE }}
