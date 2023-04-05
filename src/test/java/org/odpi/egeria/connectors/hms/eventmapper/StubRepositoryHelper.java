@@ -702,7 +702,31 @@ public class StubRepositoryHelper implements OMRSRepositoryHelper {
     }
 
     @Override
+    public  InstanceProperties addStringArrayStringMapPropertyToInstance(String                    sourceName,
+                                                                         InstanceProperties        properties,
+                                                                         String                    propertyName,
+                                                                         Map<String, List<String>> mapValues,
+                                                                         String                    methodName) {
+        return null;
+    }
+    @Override
+    public  Map<String, List<String>> removeStringArrayStringMapFromProperty(String             sourceName,
+                                                                                String             propertyName,
+                                                                                InstanceProperties properties,
+                                                                                String             methodName){
+        return null;
+    }
+    @Override
+    public Map<String, List<String>> getStringArrayStringMapFromProperty(String             sourceName,
+                                                                         String             propertyName,
+                                                                         InstanceProperties properties,
+                                                                         String             methodName) {
+        return null;
+    }
+
+    @Override
     public SearchProperties getSearchPropertiesFromInstanceProperties(String sourceName, InstanceProperties properties, MatchCriteria matchCriteria) {
         return null;
     }
+
 }
