@@ -63,6 +63,8 @@ group = 'org.odpi.egeria'
 version = '1.1'
 ext.name = 'Egeria Hive Metastore Connector'
 description = 'Egeria Connector for Hive Metastore'
+// As we've migrated from maven - we'll assume all submodules publish directly to maven
+apply plugin: 'maven-publish'
 
 // Versions - most should be picked up from the import of the Egeria base POM
 ext {
