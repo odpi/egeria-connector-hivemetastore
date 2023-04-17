@@ -175,6 +175,8 @@ public class MapperHelper {
             version = System.currentTimeMillis();
         }
         entityToAdd.setVersion(version);
+        // set the create date to a known old value (it needs to be before the table creation dates) so it can be deleted if required later.
+        entityToAdd.setCreateTime(new Date(1));
 
         return entityToAdd;
 

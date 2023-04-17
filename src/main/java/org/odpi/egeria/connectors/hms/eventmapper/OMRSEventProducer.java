@@ -381,6 +381,7 @@ abstract public class OMRSEventProducer
                 null,
                 false);
         databaseGUID = databaseEntity.getGUID();
+
         saveEntityReferenceCopy(databaseEntity);
 
 
@@ -585,6 +586,7 @@ abstract public class OMRSEventProducer
                     connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName,
                     null,
                     true);
+            columnEntity.setCreateTime(connectorTable.getCreateTime());
             String dataType = connectorColumn.getType();
             List<Classification> columnClassifications = columnEntity.getClassifications();
             if (columnClassifications == null) {
