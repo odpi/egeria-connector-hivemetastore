@@ -265,6 +265,10 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         //                            if (owner != null) {
         //                               TODO Can we store this on the hmsTable ?
         //                            }
+        // the date for HMS is an int, and according to rHive code is the number of seconds since 1970.
+        // In Hive it is created using int time = (int) (System.currentMilliSeconds() / 1000)
+        // the below code is looking to get back the long- but does to the casting and the division the date is not
+        // correct.
         Date createTimeDate = new Date(createTime*1000);
         connectorTable.setName(tableName);
         connectorTable.setCreateTime(createTimeDate);
@@ -346,6 +350,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                 column.setName(columnName);
                 column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
                 column.setType(dataType);
+                column.setCreateTime(createTimeDate);
                 connectorTable.addColumn(column);
             }
         }
