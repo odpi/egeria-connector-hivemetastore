@@ -565,6 +565,7 @@ public class OMRSDatabasePollingRepositoryEventMapperTest {
         table.setDbName(HMSOMRSRepositoryEventMapperProvider.DATABASE_NAME);
         table.setCatName(HMSOMRSRepositoryEventMapperProvider.CATALOG_NAME);
         table.setTableName(name);
+        table.setCreateTime((int)(System.currentTimeMillis()/1000));
         return table;
     }
 

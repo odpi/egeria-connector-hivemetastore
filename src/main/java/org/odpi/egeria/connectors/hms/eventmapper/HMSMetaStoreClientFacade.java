@@ -10,6 +10,9 @@ import org.apache.thrift.TException;
 
 import java.util.List;
 
+/**
+ * This is a
+ */
 public class HMSMetaStoreClientFacade implements IMetaStoreClientFacade {
     HiveMetaStoreClient hiveMetaStoreClient =null;
 
