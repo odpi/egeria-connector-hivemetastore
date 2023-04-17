@@ -218,6 +218,7 @@ public class MapperHelper {
                 formula,
                 methodName);
         classification.setProperties(initialProperties);
+        classification.setCreateTime(entity.getCreateTime());
         repositoryHelper.addClassificationToEntity(apiName, entity, classification, methodName);
 
         return classification;
@@ -266,6 +267,7 @@ public class MapperHelper {
             repositoryHelper.addStringPropertyToInstance(apiName, instanceProperties, "dataType", dataType, methodName);
         }
         classification.setProperties(instanceProperties);
+        classification.setCreateTime(entity.getCreateTime());
         repositoryHelper.addClassificationToEntity(apiName, entity, classification, methodName);
         return classification;
 

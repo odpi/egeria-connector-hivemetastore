@@ -542,7 +542,6 @@ abstract public class OMRSEventProducer
 
         tableEntity.setCreateTime(connectorTable.getCreateTime());
 
-
         List<Classification> tableClassifications = tableEntity.getClassifications();
         if (tableClassifications == null) {
             tableClassifications = new ArrayList<>();
@@ -570,6 +569,7 @@ abstract public class OMRSEventProducer
                 SupportedTypes.RELATIONAL_DB_SCHEMA_TYPE,
                 tableGuid,
                 SupportedTypes.TABLE);
+        relationship.setCreateTime(connectorTable.getCreateTime());
         saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
 
         Iterator<ConnectorColumn> colsIterator = connectorTable.getColumns().listIterator();
@@ -590,8 +590,8 @@ abstract public class OMRSEventProducer
             if (columnClassifications == null) {
                 columnClassifications = new ArrayList<>();
             }
-
-            columnClassifications.add(mapperHelper.createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType));
+            Classification embeddedClassification = mapperHelper.createTypeEmbeddedClassificationForColumn("refreshRepository", columnEntity, dataType);
+            columnClassifications.add( embeddedClassification);
 
             columnEntity.setClassifications(columnClassifications);
 
@@ -603,6 +603,7 @@ abstract public class OMRSEventProducer
                     SupportedTypes.TABLE,
                     columnEntity.getGUID(),
                     SupportedTypes.COLUMN);
+            relationship.setCreateTime(connectorTable.getCreateTime());
             saveRelationshipReferenceCopyForTable(relationship,tableQualifiedName);
         }
     }

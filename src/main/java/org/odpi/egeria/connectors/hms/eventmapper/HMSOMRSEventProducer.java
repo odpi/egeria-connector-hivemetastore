@@ -260,14 +260,14 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         String tableName = hmsTable.getTableName();
         String tableType = hmsTable.getTableType();
         String tableCanonicalName = qualifiedName + SupportedTypes.SEPARATOR_CHAR + tableName;
-        int createTime = hmsTable.getCreateTime();
+        long createTime = hmsTable.getCreateTime();
         //                            String owner = hmsTable.getOwner();
         //                            if (owner != null) {
         //                               TODO Can we store this on the hmsTable ?
         //                            }
-
+        Date createTimeDate = new Date(createTime*1000);
         connectorTable.setName(tableName);
-        connectorTable.setCreateTime(new Date(createTime));
+        connectorTable.setCreateTime(createTimeDate);
         connectorTable.setQualifiedName(tableCanonicalName);
         connectorTable.setType(tableType);
 
@@ -320,6 +320,8 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                                         column.setName(columnName);
                                         column.setQualifiedName(connectorTable.getQualifiedName() + SupportedTypes.SEPARATOR_CHAR + columnName);
                                         column.setType(dataType);
+                                        column.setCreateTime(createTimeDate);
+
                                         connectorTable.addColumn(column);
                                     }
                                 }
