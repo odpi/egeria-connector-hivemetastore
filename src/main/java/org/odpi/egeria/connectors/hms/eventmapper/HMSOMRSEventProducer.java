@@ -3,13 +3,10 @@
 package org.odpi.egeria.connectors.hms.eventmapper;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
@@ -45,9 +42,17 @@ import java.util.*;
 @SuppressWarnings({"Var","Varifier"})
 public class HMSOMRSEventProducer extends OMRSEventProducer
 {
-
+    /**
+     * HMS table parameter indicating that the number of parts of a Spark schema
+     */
     public static final String SPARK_SQL_SOURCES_SCHEMA_NUM_PARTS = "spark.sql.sources.schema.numParts";
+    /**
+     * HMS table parameter prefix for a Spark schema part- it is followed by the part number
+     */
     public static final String SPARK_SQL_SOURCES_SCHEMA_PART = "spark.sql.sources.schema.part.";
+    /**
+     * HMS table parameter that contains the complete schema.
+     */
     public static final String SPARK_SQL_SOURCES_SCHEMA = "spark.sql.sources.schema";
     private IMetaStoreClientFacade client = null;
 
@@ -60,6 +65,17 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         super();
     }
 
+    /**
+     * HMSOMRSEventProducer constructor
+     * @param auditLog audit log
+     * @param repositoryHelper repository helper
+     * @param repositoryConnector repository connector
+     * @param repositoryEventProcessor event processor
+     * @param configurationProperties configuration properties
+     * @param endpoint endpoint
+     * @param userId userid
+     * @throws ConnectorCheckedException connector exception
+     */
     public HMSOMRSEventProducer(AuditLog auditLog,
                                 OMRSRepositoryHelper repositoryHelper,
                                 OMRSRepositoryConnector repositoryConnector,
@@ -71,10 +87,18 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
 
     }
 
+    /**
+     * get the client - which is a facade for the real HMS client
+     * @return the client
+     */
     public IMetaStoreClientFacade getClient() {
         return client;
     }
 
+    /**
+     * set the client, which is a facade for the real HMS client
+     * @param client client to set
+     */
     public void setClient(IMetaStoreClientFacade client) {
         this.client = client;
     }
@@ -256,7 +280,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
      */
     @SuppressWarnings("JavaUtilDate")
     private ConnectorTable getTableFromHMSTable(String qualifiedName, Table hmsTable) throws ConnectorCheckedException {
-        var connectorTable = new ConnectorTable();
+
         String tableName = hmsTable.getTableName();
         String tableType = hmsTable.getTableType();
         String tableCanonicalName = qualifiedName + SupportedTypes.SEPARATOR_CHAR + tableName;
@@ -270,10 +294,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         // the below code is looking to get back the long- but does to the casting and the division the date is not
         // correct.
         Date createTimeDate = new Date(createTime*1000);
-        connectorTable.setName(tableName);
-        connectorTable.setCreateTime(createTimeDate);
-        connectorTable.setQualifiedName(tableCanonicalName);
-        connectorTable.setType(tableType);
+        var connectorTable = new ConnectorTable(tableName, tableCanonicalName, tableType, createTimeDate, hmsTable.getViewOriginalText());
 
         if (tableType != null && tableType.equals("EXTERNAL_TABLE")) {
             Map<String, String> parameters = hmsTable.getParameters();
@@ -329,7 +350,6 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
                                         connectorTable.addColumn(column);
                                     }
                                 }
-
                             }
                         }
                     }

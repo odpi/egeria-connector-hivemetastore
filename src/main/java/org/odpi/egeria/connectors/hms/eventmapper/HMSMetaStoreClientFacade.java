@@ -11,11 +11,18 @@ import org.apache.thrift.TException;
 import java.util.List;
 
 /**
- * This is a
+ * This is a facade in front of the HMS client API. The HMS API is described in an HMS interface IMetaStoreClient.
+ * This interface has different methods at different HMS client versions. This facade allows
+ * calls to call the HMS client without being aware of which version is being used.
  */
 public class HMSMetaStoreClientFacade implements IMetaStoreClientFacade {
     HiveMetaStoreClient hiveMetaStoreClient =null;
 
+    /**
+     *  HMSMetaStoreClientFacade constructor
+     * @param conf Hadoop configuration
+     * @throws MetaException Exception
+     */
     public HMSMetaStoreClientFacade(Configuration conf) throws MetaException {
         hiveMetaStoreClient = new HiveMetaStoreClient(conf, null, false);
     }
