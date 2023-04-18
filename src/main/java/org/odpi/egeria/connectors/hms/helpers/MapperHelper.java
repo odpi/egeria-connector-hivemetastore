@@ -13,6 +13,9 @@ import org.odpi.openmetadata.repositoryservices.ffdc.exception.TypeErrorExceptio
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 
+/**
+ * Mapper helper provides utility methods to create and update Egeria entity and relationship objects.
+ */
 public class MapperHelper {
     private OMRSRepositoryHelper repositoryHelper          = null;
     private String userId = null;
@@ -22,6 +25,15 @@ public class MapperHelper {
     private String metadataCollectionName = null;
     private String qualifiedNamePrefix = null;
 
+    /**
+     * Mapper Helper constructor
+     * @param repositoryHelper repository helper
+     * @param userId userId
+     * @param metadataCollectionId metadata collection id
+     * @param repositoryName repository name
+     * @param metadataCollectionName metadata collection name
+     * @param qualifiedNamePrefix qualified Name prefix
+     */
     public MapperHelper( OMRSRepositoryHelper repositoryHelper, String userId, String  metadataCollectionId, String repositoryName, String metadataCollectionName, String qualifiedNamePrefix) {
         this.repositoryHelper = repositoryHelper;
         this.userId = userId;
@@ -32,6 +44,16 @@ public class MapperHelper {
 
     }
 
+    /**
+     * Create reference relationship
+     * @param relationshipTypeName relationship type name
+     * @param end1GUID end 1 guid
+     * @param end1TypeName end 1 type name
+     * @param end2GUID end 2 guid
+     * @param end2TypeName end 2 typename
+     * @return relationship
+     * @throws ConnectorCheckedException exception occured
+     */
     public Relationship createReferenceRelationship(String relationshipTypeName, String end1GUID, String end1TypeName, String end2GUID, String end2TypeName) throws ConnectorCheckedException {
         String methodName = "createReferenceRelationship";
 

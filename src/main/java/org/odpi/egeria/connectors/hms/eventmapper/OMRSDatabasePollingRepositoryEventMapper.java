@@ -48,12 +48,22 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
      * Default polling refresh interval in milliseconds.
      */
     private int refreshInterval = 5000;
-
+    /**
+     * metadata collection
+     */
     protected OMRSMetadataCollection metadataCollection = null;
+    /**
+     * polling thread
+     */
     private PollingThread pollingThread;
+    /**
+     * HMS OMRS event producer
+     */
 
     private HMSOMRSEventProducer omrsEventProducer = null;
-
+    /**
+     * HMS client facade
+     */
     private IMetaStoreClientFacade client = null;
     private boolean testing = false;
 
@@ -66,10 +76,18 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
         super();
     }
 
+    /**
+     * set the client facade
+     * @param client HMS CLient facade
+     */
     public void setClient(IMetaStoreClientFacade client) {
         this.client = client;
     }
 
+    /**
+     * get userId
+     * @return userId
+     */
     synchronized public String getUserId() {
         return userId;
     }
@@ -149,6 +167,10 @@ public class OMRSDatabasePollingRepositoryEventMapper extends OMRSRepositoryEven
             auditLog.logMessage(methodName, HMSOMRSAuditCode.EVENT_MAPPER_SHUTDOWN.getMessageDefinition(repositoryConnector.getServerName()));
         }
     }
+
+    /**
+     * set testing flag to indicate we are running in a junit.
+     */
 
     public void setTesting() {
         testing = true;

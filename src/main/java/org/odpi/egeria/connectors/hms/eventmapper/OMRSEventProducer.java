@@ -54,9 +54,21 @@ abstract public class OMRSEventProducer
      * UserId associated with this connector
      */
     private String userId = null;
+    /**
+     * aulified name prefix
+     */
     private String qualifiedNamePrefix = "";
+    /**
+     * metadata collection id
+     */
     protected String metadataCollectionId = null;
+    /**
+     * metadata collection name
+     */
     protected String metadataCollectionName = null;
+    /**
+     * Metadata collection
+     */
     protected OMRSMetadataCollection metadataCollection = null;
 
     private String repositoryName = null;
@@ -96,6 +108,18 @@ abstract public class OMRSEventProducer
     public OMRSEventProducer() {
 
     }
+
+    /**
+     * Constructor for OMRSEventProducer
+     * @param auditLog audit log
+     * @param repositoryHelper repository helper
+     * @param repositoryConnector repository connector
+     * @param repositoryEventProcessor reposity  event processor
+     * @param configurationProperties configuration properties
+     * @param endpoint endpoint
+     * @param userId userid
+     * @throws ConnectorCheckedException exception occurred.
+     */
     public OMRSEventProducer(AuditLog auditLog,
                              OMRSRepositoryHelper repositoryHelper,
                              OMRSRepositoryConnector repositoryConnector,
@@ -126,6 +150,10 @@ abstract public class OMRSEventProducer
         return dbName;
     }
 
+    /**
+     * a flag to inducate to send poll events
+     * @return flag value
+     */
     public boolean isSendPollEvents() {
         return sendPollEvents;
     }
@@ -554,7 +582,7 @@ abstract public class OMRSEventProducer
 
         if (tableType != null && tableType.equals("VIRTUAL_VIEW")) {
             //Indicate that this hmsTable is a view using the classification
-            tableClassifications.add(mapperHelper.createCalculatedValueClassification("refreshRepository", tableEntity, connectorTable.getHmsViewOriginalText()));
+            tableClassifications.add(mapperHelper.createCalculatedValueClassification("refreshRepository", tableEntity, connectorTable.getFormula()));
         }
         if (!tableClassifications.isEmpty()) {
             tableEntity.setClassifications(tableClassifications);
