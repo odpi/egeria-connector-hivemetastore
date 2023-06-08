@@ -293,7 +293,7 @@ public class HMSOMRSEventProducer extends OMRSEventProducer
         // In Hive it is created using int time = (int) (System.currentMilliSeconds() / 1000)
         // the below code is looking to get back the long- but does to the casting and the division the date is not
         // correct.
-        Date createTimeDate = new Date(createTime*1000);
+        Date createTimeDate = new Date(createTime*1000L);
         var connectorTable = new ConnectorTable(tableName, tableCanonicalName, tableType, createTimeDate, hmsTable.getViewOriginalText());
 
         if (tableType != null && tableType.equals("EXTERNAL_TABLE")) {
