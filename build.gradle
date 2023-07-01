@@ -23,7 +23,7 @@ plugins {
     // helps resolve log implementation clashes
     id 'dev.jacomet.logging-capabilities' version "0.11.0"
     // This plugin helps resolve jakarta/javax clashes
-    id 'org.gradlex.java-ecosystem-capabilities' version "1.3"
+    id 'org.gradlex.java-ecosystem-capabilities' version "1.3.1"
 }
 
 // Only do signing when running under github actions
