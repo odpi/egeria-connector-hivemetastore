@@ -109,7 +109,7 @@ dependencies {
         // this is implementation not API, so that it brings in GetTableRequest, which is required at runtime by the hms client
         // this is not using the variable for the version - I think something about the characters is not
         // allowing me to - so I have hard coded for now.
-        implementation 'org.apache.hive:hive-standalone-metastore-common:4.0.0-alpha-2'
+        implementation 'org.apache.hive:hive-standalone-metastore-common:4.0.0-beta-1'
 
     } else {
         api("org.apache.hive:hive-standalone-metastore:${hmsVersion3}")
