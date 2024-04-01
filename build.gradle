@@ -72,7 +72,7 @@ ext {
     hmsVersion4 = '4.0.0-alpha-2'
     ibmhmsVersion = '3.1.2'
     hadoopVersion = '3.3.6'
-    hiveStorageVersion = '2.8.1'
+    hiveStorageVersion = '4.0.0'
     thriftVersion = '0.18.0'
 }
 
